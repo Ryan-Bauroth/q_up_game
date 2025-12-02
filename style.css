@@ -1,0 +1,7 @@
+#canvas {
+    image-rendering: pixelated;
+}
+
+#canvas-container{
+    text-align: center;
+}
