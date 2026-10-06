@@ -78,7 +78,7 @@ const STEPS = [
     {
         heading: "The goal",
         body: [
-            "Every piece shows a number. Get them all to 0.",
+            "Every piece on the board shows a number. Get them all to 0.",
             "Press Run. If every number reaches 0, you win.",
         ],
         draw(ctx) {
@@ -138,7 +138,7 @@ const STEPS = [
     {
         heading: "Your hand",
         body: [
-            "Drag pieces onto the board. You don't always need every piece in your hand. Padlocked ones are fixed.",
+            "Drag pieces onto the board. Hand pieces show 0: they never have to be activated. Padlocked ones are fixed.",
             "Drop on another piece to swap, or drag off the board to take back.",
         ],
         draw(ctx) {

@@ -16,9 +16,10 @@ export function describePiece(node) {
         ? ROW_BEAM_NAME
         : COLOR_NAMES[type] ?? (skipDepth(node) > 0 ? "Red w/ outline" : "Red");
     const starter = isStarter(node);
-    const needed = starter
-        ? "none"
-        : node.charges <= 0 ? "0 (done)" : String(node.charges);
+    let needed;
+    if (starter) needed = "none";
+    else if (!node.required) needed = "0";
+    else needed = node.charges <= 0 ? "0 (done)" : String(node.charges);
 
     const description = node.abilities.length === 0
         ? "Just needs to be activated."

@@ -75,7 +75,7 @@ export function checkWin(grid, gridScale) {
     for (let x = 0; x < gridScale; x++) {
         for (let y = 0; y < gridScale; y++) {
             const node = grid[x][y];
-            if (!node.isEmpty && node.charges > 0) return false;
+            if (!node.isEmpty && node.required && node.charges > 0) return false;
         }
     }
     return true;

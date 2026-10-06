@@ -28,8 +28,8 @@ export const KINDS = {
 };
 
 let nextId = 1;
-export const makePiece = (kind, charges = 1, locked = false) =>
-    new Node({id: nextId++, summary: KINDS[kind].summary, charges, abilities: [...KINDS[kind].abilities], locked});
+export const makePiece = (kind, charges = 1, locked = false, required = true) =>
+    new Node({id: nextId++, summary: KINDS[kind].summary, charges, abilities: [...KINDS[kind].abilities], locked, required});
 
 export const PUZZLE_SIZE = 5;
 
@@ -126,7 +126,8 @@ export function buildFromDefinition(def) {
     for (const [x, y, kind, charges = 1] of def.locked) {
         grid[x][y] = makePiece(kind, charges, true);
     }
-    const pool = def.hand.map(kind => makePiece(kind));
+    // hand pieces need no activations: they are tools, not targets
+    const pool = def.hand.map(kind => makePiece(kind, 1, false, false));
     return {name: def.name, grid, pool};
 }
 

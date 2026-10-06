@@ -123,3 +123,22 @@ test("a Row piece activates every other cell in its row, and not itself", () => 
     assert.equal(grid[1][2].charges, 1);
     assert.equal(result.won, false);
 });
+
+test("a piece that isn't required never blocks a win, but still fires once when hit", () => {
+    const grid = makeGrid(3);
+    grid[0][0] = new Node({id: 1, charges: 1, abilities: ["runPulseDown"]});                    // hits (0,1)
+    grid[0][1] = new Node({id: 2, charges: 1, abilities: ["pairH"], required: false});          // optional relay, hits (1,1)
+    grid[1][1] = new Node({id: 3, charges: 1, abilities: []});
+    grid[2][2] = new Node({id: 4, charges: 1, abilities: [], required: false});                 // optional, never hit
+
+    const result = simulate(grid, 3);
+
+    assert.equal(result.won, true);
+    assert.equal(grid[1][1].charges, 0);   // the optional relay fired
+    assert.equal(grid[2][2].charges, 1);   // the unused optional piece stays as it was and doesn't matter
+});
+
+test("clone() keeps whether a piece is required", () => {
+    assert.equal(new Node({id: 1, charges: 1, required: false}).clone().required, false);
+    assert.equal(new Node({id: 1, charges: 1}).clone().required, true);
+});

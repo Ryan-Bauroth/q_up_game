@@ -1,8 +1,11 @@
 export class Node {
-    constructor({id = 0, summary = "", charges = 0, abilities = [], locked = false} = {}) {
+    constructor({id = 0, summary = "", charges = 0, abilities = [], locked = false, required = true} = {}) {
         this.id = id;
         // locked pieces start on the board and can't be moved or replaced
         this.locked = locked;
+        // a piece that isn't required can be left unactivated without losing the
+        // game (hand pieces); it still fires once if something hits it
+        this.required = required;
         this.summary = summary;
         this.maxCharges = charges;
         this.charges = charges;
@@ -31,7 +34,7 @@ export class Node {
     }
 
     clone() {
-        return new Node({id: this.id, summary: this.summary, charges: this.maxCharges, abilities: [...this.abilities], locked: this.locked});
+        return new Node({id: this.id, summary: this.summary, charges: this.maxCharges, abilities: [...this.abilities], locked: this.locked, required: this.required});
     }
 }
 

@@ -11,7 +11,7 @@ export function layout(definition, skip = -1) {
         if (i === skip) continue;
         const {x, y, kind} = definition.solution[i];
         if (!grid[x][y].isEmpty) return null;
-        grid[x][y] = makePiece(kind);
+        grid[x][y] = makePiece(kind, 1, false, false);
     }
     return grid;
 }

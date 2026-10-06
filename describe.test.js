@@ -46,3 +46,8 @@ test("the Locked bullet only appears when the piece is locked", () => {
     assert.equal(describePiece(make(["adjacentBurst"], 1, false)).facts.some(([l]) => l === "Locked"), false);
     assert.equal(describePiece(make(["adjacentBurst"], 1, true)).facts.some(([l]) => l === "Locked"), true);
 });
+
+test("a piece that isn't required needs 0 activations", () => {
+    const optional = new Node({id: 1, summary: "Piece", charges: 1, abilities: ["adjacentBurst"], required: false});
+    assert.equal(fact(describePiece(optional), "Activations needed"), "0");
+});

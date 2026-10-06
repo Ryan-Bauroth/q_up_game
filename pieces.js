@@ -51,6 +51,10 @@ export function pieceType(node) {
     return "reactor";
 }
 
+// The number drawn on a piece: how many more activations it needs (0 for a
+// piece that isn't required, like the ones in the hand).
+export const shownCount = node => (node.required ? node.charges : 0);
+
 export function colorForNode(node) {
     const type = pieceType(node);
     return type === "beam" && beamAxis(node) === "row" ? PALETTE.beamRow : PALETTE[type];
@@ -402,7 +406,7 @@ export function drawPieceShape(ctx, node, cx, cy, size, dim = 1, backing = "#fff
     ctx.font = `bold ${Math.floor(size * 0.3)}px sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(String(node.charges), cx, cy);
+    ctx.fillText(String(shownCount(node)), cx, cy);
 
     if (node.locked) {
         // in the bottom-right corner of the cell, clear of the piece
