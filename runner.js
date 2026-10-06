@@ -1,4 +1,3 @@
-import {isStarter} from "./abilities.js";
 import {drawnLinks, linkKey} from "./wires.js";
 
 // Plays a simulation trace back on the board as quick flashes: the piece that
@@ -49,23 +48,15 @@ export async function playRun(board, trace, gridScale, timing = {}) {
     }
     const fired = new Map();
 
-    // Run press: every starter flashes and spends its charge.
-    const starters = [];
-    for (let x = 0; x < gridScale; x++) {
-        for (let y = 0; y < gridScale; y++) {
-            const node = grid[x][y];
-            if (!node.isEmpty && isStarter(node) && node.charges > 0) starters.push({x, y});
-        }
-    }
-    fx.flashes = starters;
-    starters.forEach(({x, y}) => grid[x][y].activate());
-    board.drawBoard();
-    await flashWait();
-    fx.flashes = [];
-    board.drawBoard();
-    await gapWait();
+    // Each starter's chain plays in turn. The Run press spends a starter's charge
+    // just before its chain begins (the first step's flash is the press itself).
+    let current = null;
 
     for (const step of trace) {
+        if (!current || current.x !== step.root.x || current.y !== step.root.y) {
+            current = step.root;
+            grid[current.x][current.y].activate();
+        }
         fx.flashes = [{x: step.sourceX, y: step.sourceY}];
         board.drawBoard();
         await flashWait();
