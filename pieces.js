@@ -248,10 +248,10 @@ export function dotRing(node, gridSize, dotExtent) {
 
 // Draws a piece centered at (cx, cy) inside a size x size box. Shared by the
 // board canvas, the tray canvases and the drag ghost so all look identical.
-// `dim` (0-1) fades the piece, e.g. while another piece is hovered;
-// `lockAlpha` (0-1) fades just the padlock badge; `backing` is the color a
-// faded piece is backed with (the board color behind it).
-export function drawPieceShape(ctx, node, cx, cy, size, dim = 1, lockAlpha = 1, backing = "#ffffff") {
+// `dim` (0-1) fades the piece (padlock included), e.g. while another piece is
+// hovered; `backing` is the color a faded piece is backed with (the board
+// color behind it).
+export function drawPieceShape(ctx, node, cx, cy, size, dim = 1, backing = "#ffffff") {
     const R = size / 2;
     const {fill, edge} = colorForNode(node);
     const sides = bodySides(node);
@@ -403,8 +403,6 @@ export function drawPieceShape(ctx, node, cx, cy, size, dim = 1, lockAlpha = 1, 
     ctx.fillText(String(node.charges), cx, cy);
 
     if (node.locked) {
-        // the lock fades (but stays) while its piece is hovered
-        ctx.globalAlpha *= lockAlpha;
         // in the bottom-right corner of the cell, clear of the piece
         drawLock(ctx, cx + R * 0.82, cy + R * 0.82, R * 0.28);
     }

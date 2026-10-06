@@ -1,15 +1,18 @@
-import {ABILITIES} from "./abilities.js";
+import {describePiece} from "./describe.js";
 
 const panel = document.getElementById("summary-panel");
-const PLACEHOLDER = "Hover or drag a node to see details.";
+const PLACEHOLDER = "Hover a piece for details.";
 // Short grace period so crossing the gap between pieces doesn't flash the
 // placeholder.
 const CLEAR_DELAY_MS = 120;
 
 let clearTimer = null;
+let shown = null;   // what the panel currently shows, so identical updates are skipped
 
-function setText(text) {
-    if (panel.textContent !== text) panel.textContent = text;
+function setContent(signature, build) {
+    if (shown === signature) return;
+    shown = signature;
+    panel.replaceChildren(...build());
 }
 
 function cancelPendingClear() {
@@ -17,6 +20,15 @@ function cancelPendingClear() {
         clearTimeout(clearTimer);
         clearTimer = null;
     }
+}
+
+function fact(label, value) {
+    const item = document.createElement("li");
+    const strong = document.createElement("strong");
+    strong.textContent = value === null ? label : `${label}: `;
+    item.append(strong);
+    if (value !== null) item.append(document.createTextNode(value));
+    return item;
 }
 
 export function renderSummary(node) {
@@ -27,14 +39,24 @@ export function renderSummary(node) {
         return;
     }
     cancelPendingClear();
-    const abilityLabels = node.abilities
-        .map(id => ABILITIES[id]?.label ?? id)
-        .join(", ");
-    const lockedNote = node.locked ? " — Locked (can't be moved)" : "";
-    setText(`${node.summary || "Node " + node.id} — ${node.charges}/${node.maxCharges} charges — Abilities: ${abilityLabels || "none"}${lockedNote}`);
+    const {title, facts, description} = describePiece(node);
+    const signature = JSON.stringify([title, facts, description]);
+    setContent(signature, () => {
+        // the piece's color as a title, quick facts as bullet points, then what it does
+        const heading = document.createElement("div");
+        heading.className = "summary-title";
+        heading.textContent = title;
+        const list = document.createElement("ul");
+        list.className = "summary-facts";
+        list.append(...facts.map(([label, value]) => fact(label, value)));
+        const text = document.createElement("p");
+        text.className = "summary-description";
+        text.textContent = description;
+        return [heading, list, text];
+    });
 }
 
 export function clearSummary() {
     cancelPendingClear();
-    setText(PLACEHOLDER);
+    setContent("placeholder", () => [document.createTextNode(PLACEHOLDER)]);
 }

@@ -6,8 +6,9 @@ import {wireLinks, drawnLinks, linkKey, skipHits, dotAngles, beamLevel, beamWidt
 export class Board {
     static OUTLINE_STROKE = 5;
     static GRID_STROKE = 1;
-    static TINT_ALPHA = 0.16; // opacity of the purple wash under a beam piece
-    static LOCK_DIM = 0.3; // opacity of a hovered piece's padlock
+    static BEAM_SHADOW = 0.22;       // darkness of the shadow where a beam meets a piece
+    static TINT_ALPHA = 0.16;        // opacity of the purple wash under a beam piece
+    static TINT_HOVER_BOOST = 0.07;  // a little darker while that piece is hovered
     static DIM = 0.45; // opacity of pieces not involved in the hovered piece
 
     constructor(canvas, boardSize, gridScale) {
@@ -105,8 +106,9 @@ export class Board {
                 const hidden = this.dragging && this.dragSource === "board" && this.dragI === i && this.dragJ === j;
                 if (!hidden) {
                     const c = this.cellCenter(i, j);
-                    const hovered = this.hoverCell !== null && this.hoverCell.x === i && this.hoverCell.y === j;
-                    this.drawNode(node, c.x, c.y, lit && !lit.has(`${i},${j}`) ? Board.DIM : 1, hovered ? Board.LOCK_DIM : 1, this.cellBackground(coverage, i, j));
+                    // the hovered piece and the pieces it impacts stay fully lit,
+                    // padlocks included; everything else is dimmed
+                    this.drawNode(node, c.x, c.y, lit && !lit.has(`${i},${j}`) ? Board.DIM : 1, this.cellBackground(coverage, i, j));
                 }
             }
         }
@@ -154,17 +156,32 @@ export class Board {
 
     // A soft purple wash over every cell a placed beam piece (column / row
     // sweep) covers, including the beam's own cell.
-    // How many beam pieces cover each cell: Map of "x,y" -> count.
-    beamCoverage() {
-        const coverage = new Map();
+    // One tint layer per placed beam piece (column / row sweep): the cells it
+    // covers, including its own, and how strong the purple wash is. A beam's
+    // wash gets slightly darker while its piece is hovered.
+    beamLayers() {
+        const layers = [];
         for (let i = 0; i < this.gridScale; i++) {
             for (let j = 0; j < this.gridScale; j++) {
                 const node = this.grid[i][j];
                 if (node.isEmpty || !isBeam(node)) continue;
-                for (const {x, y} of [{x: i, y: j}, ...targetCells(node, i, j, this.gridScale)]) {
-                    const key = `${x},${y}`;
-                    coverage.set(key, (coverage.get(key) ?? 0) + 1);
-                }
+                const hovered = this.hoverCell !== null && this.hoverCell.x === i && this.hoverCell.y === j;
+                layers.push({
+                    cells: [{x: i, y: j}, ...targetCells(node, i, j, this.gridScale)],
+                    alpha: Board.TINT_ALPHA + (hovered ? Board.TINT_HOVER_BOOST : 0),
+                });
+            }
+        }
+        return layers;
+    }
+
+    // Combined wash strength in each cell: Map of "x,y" -> alpha (0-1).
+    beamCoverage() {
+        const coverage = new Map();
+        for (const {cells, alpha} of this.beamLayers()) {
+            for (const {x, y} of cells) {
+                const key = `${x},${y}`;
+                coverage.set(key, 1 - (1 - (coverage.get(key) ?? 0)) * (1 - alpha));
             }
         }
         return coverage;
@@ -172,24 +189,20 @@ export class Board {
 
     // The board color in a cell: white, or white under the purple tint.
     cellBackground(coverage, i, j) {
-        const layers = coverage.get(`${i},${j}`) ?? 0;
-        if (layers === 0) return "#ffffff";
-        const alpha = 1 - Math.pow(1 - Board.TINT_ALPHA, layers);
+        const alpha = coverage.get(`${i},${j}`) ?? 0;
+        if (alpha === 0) return "#ffffff";
         const [r, g, b] = [0x7b, 0x5f, 0xc4].map(c => Math.round(255 - (255 - c) * alpha));
         return `rgb(${r}, ${g}, ${b})`;
     }
 
-    // A soft purple wash over every cell a placed beam piece (column / row
-    // sweep) covers, including the beam's own cell.
+    // A soft purple wash over every cell a placed beam piece covers.
     drawBeamTints() {
         const ctx = this.ctx;
         ctx.save();
         ctx.fillStyle = PALETTE.beam.fill;
-        ctx.globalAlpha = Board.TINT_ALPHA;
-        for (const [key, layers] of this.beamCoverage()) {
-            const [x, y] = key.split(",").map(Number);
-            // one wash per covering beam, so overlaps get darker
-            for (let n = 0; n < layers; n++) {
+        for (const {cells, alpha} of this.beamLayers()) {
+            ctx.globalAlpha = alpha;
+            for (const {x, y} of cells) {
                 const o = this.cellOrigin(x, y);
                 ctx.fillRect(o.x, o.y, this.gridSize, this.gridSize);
             }
@@ -282,13 +295,14 @@ export class Board {
             ctx.stroke();
         };
         // the part of wire a-b between fractions t0 and t1
-        const wireSegment = (a, b, t0, t1, {fill, edge}, level) => {
+        const wireSegment = (a, b, t0, t1, {fill}, level) => {
             if (t1 <= t0) return;
             const p = lerp(a, b, t0), q = lerp(a, b, t1);
             ctx.lineCap = "butt";   // beams end flush at the piece edges
+            // no dark outline: just the beam's own color, a touch wider than
+            // the old inner stroke so it keeps its presence
             const {outer, inner} = beamWidths(level);
-            stroke(p, q, edge, outer);
-            stroke(p, q, fill, inner);
+            stroke(p, q, fill, (outer + inner) / 2);
         };
         // A filled, softly rounded triangle showing which way the beam flows;
         // `both` draws two back-to-back for two-way connections.
@@ -315,6 +329,29 @@ export class Board {
             } else {
                 triangle(1, -2.6, 2.8, 2.6);
             }
+        };
+
+        // Darkens the last stretch of a beam running from `from` into `to`, so it
+        // looks like it slides under the piece it touches.
+        const shadeBeamEnd = (from, to, tuck, width) => {
+            const dx = to.x - from.x, dy = to.y - from.y;
+            const length = Math.hypot(dx, dy) || 1;
+            const ux = dx / length, uy = dy / length;
+            const spread = 6;
+            const start = {x: to.x - ux * (tuck + spread), y: to.y - uy * (tuck + spread)};
+            const edgePoint = {x: to.x - ux * tuck, y: to.y - uy * tuck};
+            const gradient = ctx.createLinearGradient(start.x, start.y, edgePoint.x, edgePoint.y);
+            gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+            gradient.addColorStop(1, `rgba(0, 0, 0, ${Board.BEAM_SHADOW})`);
+            ctx.save();
+            ctx.lineCap = "butt";
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = width;
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.stroke();
+            ctx.restore();
         };
 
         const wires = drawnLinks(this.grid, this.gridScale);
@@ -346,6 +383,13 @@ export class Board {
                 wireSegment(a, b, t0, t1, src, srcLevel);
             }
             if (t0 < 0.5 && t1 > 0.5) flowArrow(a, b, twoWay);
+
+            // a slight shadow where the beam's end meets the piece it feeds
+            // (both ends of a two-way beam)
+            const width = (beamWidths(srcLevel).outer + beamWidths(srcLevel).inner) / 2;
+            const tuck = beamWidths(srcLevel).outer * 0.6;
+            if (t1 >= 0.95) shadeBeamEnd(a, b, tuck, width);
+            if (twoWay && t0 <= 0.05) shadeBeamEnd(b, a, tuck, width);
 
             // a bright head marks where the beam is while it travels
             ctx.globalAlpha = 1;
@@ -399,7 +443,7 @@ export class Board {
     }
 
     // (cx, cy) is the center of the piece.
-    drawNode(node, cx, cy, dim = 1, lockAlpha = 1, backing = "#ffffff") {
-        drawPieceShape(this.ctx, node, cx, cy, this.gridSize * 0.92, dim, lockAlpha, backing);
+    drawNode(node, cx, cy, dim = 1, backing = "#ffffff") {
+        drawPieceShape(this.ctx, node, cx, cy, this.gridSize * 0.92, dim, backing);
     }
 }

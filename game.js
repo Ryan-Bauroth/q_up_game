@@ -7,13 +7,14 @@ import {drawPieceShape, targetCells} from "./pieces.js";
 import {buildFromDefinition, puzzleDefinition, puzzleCount, puzzleName, PUZZLE_SIZE} from "./puzzles.js";
 import {generateDefinition} from "./generator.js";
 import {solve} from "./solver.js";
+import {initTutorial} from "./tutorial.js";
 import {canDrag, applyDrop, validatePuzzle} from "./rules.js";
 
 const canvas = document.getElementById("canvas");
 const poolEl = document.getElementById("pool");
+const handLabel = document.getElementById("hand-label");
 const runButton = document.getElementById("run-button");
 const clearButton = document.getElementById("clear-button");
-const keepButton = document.getElementById("keep-button");
 const resultBanner = document.getElementById("result-banner");
 
 const boardSize = 400;
@@ -35,9 +36,10 @@ function createPuzzle() {
 
 let pool = createPuzzle();
 let runComplete = false;
-// True while a failed run is on screen. Grabbing any piece (or pressing Try
-// Again) restores the player's layout and starts a new attempt.
-let failed = false;
+// True while a finished round (a win or a miss) is on screen. Grabbing any
+// piece, or pressing the Run button (now "Keep going" / "Try Again"), restores the player's layout and
+// starts a new attempt.
+let roundOver = false;
 let animationSpeed = 1.2; // 0.5x / 1.2x / instant (1000x), chosen with the speed buttons
 let preRunGrid = null; // placements as they were just before Run, so a failed try can be adjusted
 
@@ -65,6 +67,8 @@ function moveGhost(e) {
 
 function renderPool() {
     poolEl.innerHTML = "";
+    // the label only shows while there is something in the hand
+    handLabel.hidden = pool.length === 0;
     pool.forEach((node, index) => {
         const el = document.createElement("div");
         el.className = "pool-node";
@@ -127,9 +131,9 @@ function cellFromPoint(mouseX, mouseY) {
     return {x: i, y: j};
 }
 
-// After a failed run, grabbing a piece restores the layout (like Try Again).
+// After a finished round, grabbing a piece restores the layout (like Try Again).
 function retryFromFailure() {
-    if (failed) keepButton.click();
+    if (roundOver) restoreAfterRound();
 }
 
 function startDragFromPool(e, index) {
@@ -158,7 +162,7 @@ canvas.addEventListener("mousedown", e => {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     const cell = checkMouseLocationForObject(mouseX, mouseY);
-    if (cell != null && failed) retryFromFailure();
+    if (cell != null && roundOver) retryFromFailure();
 
     if (cell != null && canDrag(board.grid[cell.x][cell.y])) {
         e.preventDefault();
@@ -239,19 +243,24 @@ function setInteractive(interactive) {
 function showResult(won) {
     resultBanner.classList.remove("hidden", "win", "lose");
     resultBanner.classList.add(won ? "win" : "lose");
-    resultBanner.textContent = won ? "Solved! Every node depleted." : "Not solved — pieces that still have charge were never reached. Press Try Again to adjust your layout.";
+    resultBanner.textContent = won ? "Solved!" : "Not solved.";
 }
 
 // Run replays the simulation as an animation. If the puzzle isn't solved,
 // the failing pieces are highlighted and the board automatically returns to
 // the player's placement so they can adjust it.
 runButton.addEventListener("click", async () => {
+    // after a finished round this button reads "Keep going" (win) or "Try Again"
+    // (miss): put the layout back and play on
+    if (roundOver) {
+        restoreAfterRound();
+        return;
+    }
     if (runComplete) return;
     runComplete = true;
     setInteractive(false);
     clearButton.disabled = true;
     resultBanner.classList.add("hidden");
-    keepButton.classList.add("hidden");
     clearSummary();
     board.previewCells = [];
     board.hoverCell = null;
@@ -262,14 +271,15 @@ runButton.addEventListener("click", async () => {
     await playRun(board, result.trace, gridScale, {getSpeed: () => animationSpeed});
 
     if (result.won) {
-        // Leave the spent beams gone (only the flashes are cleared); Keep Board
-        // and Clear Board restore them.
+        // Leave the spent beams gone (only the flashes are cleared). Run becomes
+        // "Keep going", and pieces can be grabbed straight away, like after a miss.
         board.effects.flashes = [];
         board.drawBoard();
         showResult(true);
-        keepButton.textContent = "Keep Board";
-        keepButton.classList.remove("hidden");
         clearButton.disabled = false;
+        roundOver = true;
+        setInteractive(true);
+        runButton.textContent = "Keep going";
         return;
     }
 
@@ -278,39 +288,37 @@ runButton.addEventListener("click", async () => {
     board.effects.flashes = [];
     board.drawBoard();
     showResult(false);
-    keepButton.textContent = "Try Again";
-    keepButton.classList.remove("hidden");
     clearButton.disabled = false;
-    failed = true;
-    setInteractive(true);          // pieces can be grabbed straight away...
-    runButton.disabled = true;     // ...but Run waits until the layout is restored
+    roundOver = true;
+    setInteractive(true);          // pieces can be grabbed straight away
+    runButton.textContent = "Try Again";   // same spot as "Keep going" after a win
 });
 
-// Keep Board (after a win) / Try Again (after a miss): reset the charges but
-// leave the layout in place so it can be studied, tweaked or run again.
-keepButton.addEventListener("click", () => {
-    failed = false;
+function restoreAfterRound() {
+    roundOver = false;
     board.grid = preRunGrid;
     preRunGrid = null;
     board.effects = Board.emptyEffects();
     runComplete = false;
     resultBanner.classList.add("hidden");
-    keepButton.classList.add("hidden");
+    runButton.textContent = "Run";
     setInteractive(true);
     renderPool();
     clearSummary();
     board.drawBoard();
-});
+}
+
+
 
 // Clear Board: back to the starting puzzle with every movable piece in hand.
 clearButton.addEventListener("click", () => {
-    failed = false;
+    roundOver = false;
+    runButton.textContent = "Run";
     pool = createPuzzle();
     preRunGrid = null;
     board.effects = Board.emptyEffects();
     runComplete = false;
     resultBanner.classList.add("hidden");
-    keepButton.classList.add("hidden");
     setInteractive(true);
     renderPool();
     clearSummary();
@@ -336,16 +344,23 @@ dotsToggle.addEventListener("click", () => {
 // ---- puzzle navigation (Back / Next) ----
 const backButton = document.getElementById("back-button");
 const nextButton = document.getElementById("next-button");
+const newButton = document.getElementById("new-button");
 let currentIndex = 0;   // the hand-built puzzle most recently chosen
 let isRandom = false;   // is the current game a randomly generated one?
 const history = [];     // games left behind, most recent last: {definition, index|null}
+const future = [];      // games you went Back from, so Next can return to them
 
 function updateNav() {
-    // Hand-built levels: step through the list. Random games: Next makes
-    // another random game and Back returns to the game you were just playing.
+    // Hand-built levels: Back / Next step through the list.
+    // Random games: Back returns to the game you were just playing; Next goes
+    // forward again to one you came back from (only when there is one); and a
+    // separate New button always makes another random game.
     backButton.disabled = isRandom ? history.length === 0 : currentIndex <= 0;
+    nextButton.hidden = isRandom && future.length === 0;
     nextButton.disabled = isRandom ? false : currentIndex >= puzzleCount() - 1;
+    newButton.hidden = !isRandom;
 }
+
 
 // ---- Show Solution ----
 const solutionButton = document.getElementById("solution-button");
@@ -377,7 +392,7 @@ function findPlacements(definition) {
 solutionButton.addEventListener("click", () => {
     if (clearButton.disabled) return; // the animation is playing
     solutionButton.disabled = true;
-    solutionButton.textContent = "Finding solution…";
+    solutionButton.textContent = "Solving…";
     // let the label paint before the (brief) search
     setTimeout(() => {
         const placements = findPlacements(activeDefinition);
@@ -390,14 +405,14 @@ solutionButton.addEventListener("click", () => {
                 placed.add(poolIndex);
             }
             pool = fresh.pool.filter((_, i) => !placed.has(i));
-            failed = false;
+            roundOver = false;
+            runButton.textContent = "Run";
             preRunGrid = null;
             board.effects = Board.emptyEffects();
             board.previewCells = [];
             board.hoverCell = null;
             runComplete = false;
             resultBanner.classList.add("hidden");
-            keepButton.classList.add("hidden");
             setInteractive(true);
             renderPool();
             clearSummary();
@@ -408,6 +423,7 @@ solutionButton.addEventListener("click", () => {
     }, 30);
 });
 
+const DICE_ICON = '<svg class="button-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="5" cy="5" r="1.3" fill="currentColor"/><circle cx="11" cy="5" r="1.3" fill="currentColor"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="5" cy="11" r="1.3" fill="currentColor"/><circle cx="11" cy="11" r="1.3" fill="currentColor"/></svg>';
 const pickerEl = document.getElementById("puzzle-picker");
 const pickerButtons = [];
 
@@ -429,12 +445,15 @@ function saveLayout() {
 
 // Switch to a game. index is the hand-built level number, or null for a
 // random game. The game being left is remembered for Back (unless going Back).
-function activateGame(definition, index, {remember = true, restore = false} = {}) {
+const currentEntry = () => ({definition: activeDefinition, index: isRandom ? null : currentIndex});
+
+function activateGame(definition, index, {remember = true, restore = false, keepFuture = false} = {}) {
     saveLayout();
     if (remember) {
         history.push({definition: activeDefinition, index: isRandom ? null : currentIndex});
         if (history.length > 50) history.shift();
     }
+    if (!keepFuture) future.length = 0;   // a fresh choice ends any "forward" trail
     activeDefinition = definition;
     isRandom = index === null;
     if (!isRandom) currentIndex = index;
@@ -469,7 +488,7 @@ const randomButton = document.createElement("button");
 randomButton.className = "puzzle-button random-button";
 randomButton.title = "New random puzzle";
 randomButton.setAttribute("aria-label", "New random puzzle");
-randomButton.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="5" cy="5" r="1.3" fill="currentColor"/><circle cx="11" cy="5" r="1.3" fill="currentColor"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="5" cy="11" r="1.3" fill="currentColor"/><circle cx="11" cy="11" r="1.3" fill="currentColor"/></svg>';
+randomButton.innerHTML = DICE_ICON;
 randomButton.addEventListener("click", () => {
     if (clearButton.disabled) return; // the animation is playing
     activateGame(generateDefinition(), null);
@@ -477,11 +496,39 @@ randomButton.addEventListener("click", () => {
 pickerEl.appendChild(randomButton);
 pickerButtons.push(randomButton);
 
+// ? opens the "How to play" card (it never opens by itself).
+const tutorial = initTutorial(document.getElementById("help-button"));
+
+// Open the tutorial by itself on a player's first visit only. The "seen" flag
+// lives in localStorage; browsers can block it, so every access is guarded.
+const TUTORIAL_SEEN_KEY = "qup-tutorial-seen";
+function hasSeenTutorial() {
+    try {
+        return localStorage.getItem(TUTORIAL_SEEN_KEY) === "1";
+    } catch {
+        return false;
+    }
+}
+function markTutorialSeen() {
+    try {
+        localStorage.setItem(TUTORIAL_SEEN_KEY, "1");
+    } catch {
+        // storage unavailable: it will simply show again next visit
+    }
+}
+if (!hasSeenTutorial()) {
+    tutorial.open();
+    markTutorialSeen();
+}
+
 backButton.addEventListener("click", () => {
     if (clearButton.disabled) return;
     if (isRandom) {
         const previous = history.pop();
-        if (previous) activateGame(previous.definition, previous.index, {remember: false, restore: true});
+        if (previous) {
+            future.push(currentEntry());
+            activateGame(previous.definition, previous.index, {remember: false, restore: true, keepFuture: true});
+        }
     } else if (currentIndex > 0) {
         activateGame(puzzleDefinition(currentIndex - 1), currentIndex - 1, {restore: true});
     }
@@ -489,10 +536,20 @@ backButton.addEventListener("click", () => {
 nextButton.addEventListener("click", () => {
     if (clearButton.disabled) return;
     if (isRandom) {
-        activateGame(generateDefinition(), null);
+        // forward again to the game you came back from
+        const forward = future.pop();
+        if (forward) {
+            history.push(currentEntry());
+            activateGame(forward.definition, forward.index, {remember: false, restore: true, keepFuture: true});
+        }
     } else if (currentIndex < puzzleCount() - 1) {
         activateGame(puzzleDefinition(currentIndex + 1), currentIndex + 1);
     }
+});
+newButton.innerHTML = `${DICE_ICON}New`;
+newButton.addEventListener("click", () => {
+    if (clearButton.disabled) return;
+    activateGame(generateDefinition(), null);
 });
 updateNav();
 
