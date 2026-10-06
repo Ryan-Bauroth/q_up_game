@@ -128,3 +128,12 @@ test("beams are thicker the more charges the firing piece has left", () => {
     const widths = [1, 2, 3].map(l => beamWidths(l).inner);
     assert.ok(widths[0] < widths[1] && widths[1] < widths[2]);
 });
+
+test("skipHits with includeAdjacent also counts adjacent hits (the 'all dots' mode)", () => {
+    const g = emptyGrid();
+    g[2][2] = piece(1, ["adjacentBurst"]);
+    g[3][2] = piece(2);
+    const links = wireLinks(g, 5);
+    assert.equal(skipHits(links).size, 0);                       // adjacent only: no skip dots
+    assert.deepEqual(skipHits(links, true).get("3,2"), [{x: 2, y: 2}]);
+});

@@ -408,3 +408,26 @@ export function drawPieceShape(ctx, node, cx, cy, size, dim = 1, backing = "#fff
     }
     ctx.restore();
 }
+
+// Darkens the last stretch of a beam running from `from` toward `to`, so the
+// beam looks like it slides under the piece it touches. `tuck` is how far the
+// beam's end is tucked inside that piece (the shadow is darkest at the edge).
+export function shadeBeamEnd(ctx, from, to, tuck, width, {spread = 3, alpha = 0.22} = {}) {
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const length = Math.hypot(dx, dy) || 1;
+    const ux = dx / length, uy = dy / length;
+    const start = {x: to.x - ux * (tuck + spread), y: to.y - uy * (tuck + spread)};
+    const edgePoint = {x: to.x - ux * tuck, y: to.y - uy * tuck};
+    const gradient = ctx.createLinearGradient(start.x, start.y, edgePoint.x, edgePoint.y);
+    gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+    gradient.addColorStop(1, `rgba(0, 0, 0, ${alpha})`);
+    ctx.save();
+    ctx.lineCap = "butt";
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    ctx.restore();
+}

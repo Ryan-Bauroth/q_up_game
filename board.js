@@ -1,12 +1,12 @@
 import {makeEmptyNode} from "./node.js";
-import {drawPieceShape, colorForNode, targetCells, pieceType, dotRing, bodyEdgeDistance, PALETTE} from "./pieces.js";
+import {drawPieceShape, colorForNode, targetCells, pieceType, dotRing, bodyEdgeDistance, shadeBeamEnd, PALETTE} from "./pieces.js";
 import {isBeam} from "./abilities.js";
 import {wireLinks, drawnLinks, linkKey, skipHits, dotAngles, beamLevel, beamWidths} from "./wires.js";
 
 export class Board {
     static OUTLINE_STROKE = 5;
     static GRID_STROKE = 1;
-    static BEAM_SHADOW = 0.22;       // darkness of the shadow where a beam meets a piece
+    static BEAM_SHADOW = 0.22;       // darkness of the shadow where a beam meets a piece (either end)
     static TINT_ALPHA = 0.16;        // opacity of the purple wash under a beam piece
     static TINT_HOVER_BOOST = 0.07;  // a little darker while that piece is hovered
     static DIM = 0.45; // opacity of pieces not involved in the hovered piece
@@ -43,8 +43,9 @@ export class Board {
         this.effects = Board.emptyEffects();
         // Cells to outline while hovering a piece: [{x, y}].
         this.previewCells = [];
-        // Whether the incoming-skip dots are drawn (toggled from the UI).
-        this.showDots = true;
+        // Which hits get a dot on the piece they land on (set from the dots menu):
+        //   "skips" - only non-adjacent (skip / column) hits;  "all" - every hit;  "none".
+        this.dotMode = "skips";   // "skips" | "all" | "none"
         // Board cell under the mouse, or null; its wires are drawn at full strength.
         this.hoverCell = null;
     }
@@ -214,11 +215,11 @@ export class Board {
     // color of the piece doing the hitting. They sit on a ring around the
     // charge number, centered on the top first, then spreading around.
     drawSkipDots(links, lit) {
-        if (!this.showDots) return;
+        if (this.dotMode === "none") return;
         const ctx = this.ctx;
         const dotRadius = this.gridSize * 0.03;
         ctx.save();
-        for (const [key, sources] of skipHits(links)) {
+        for (const [key, sources] of skipHits(links, this.dotMode === "all")) {
             const [tx, ty] = key.split(",").map(Number);
             if (this.grid[tx][ty].isEmpty) continue;
             const c = this.cellCenter(tx, ty);
@@ -331,29 +332,6 @@ export class Board {
             }
         };
 
-        // Darkens the last stretch of a beam running from `from` into `to`, so it
-        // looks like it slides under the piece it touches.
-        const shadeBeamEnd = (from, to, tuck, width) => {
-            const dx = to.x - from.x, dy = to.y - from.y;
-            const length = Math.hypot(dx, dy) || 1;
-            const ux = dx / length, uy = dy / length;
-            const spread = 6;
-            const start = {x: to.x - ux * (tuck + spread), y: to.y - uy * (tuck + spread)};
-            const edgePoint = {x: to.x - ux * tuck, y: to.y - uy * tuck};
-            const gradient = ctx.createLinearGradient(start.x, start.y, edgePoint.x, edgePoint.y);
-            gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
-            gradient.addColorStop(1, `rgba(0, 0, 0, ${Board.BEAM_SHADOW})`);
-            ctx.save();
-            ctx.lineCap = "butt";
-            ctx.strokeStyle = gradient;
-            ctx.lineWidth = width;
-            ctx.beginPath();
-            ctx.moveTo(start.x, start.y);
-            ctx.lineTo(to.x, to.y);
-            ctx.stroke();
-            ctx.restore();
-        };
-
         const wires = drawnLinks(this.grid, this.gridScale);
         const linkKeys = new Set(wires.map(l => linkKey(l.from, l.to)));
         const handled = new Set();
@@ -384,12 +362,12 @@ export class Board {
             }
             if (t0 < 0.5 && t1 > 0.5) flowArrow(a, b, twoWay);
 
-            // a slight shadow where the beam's end meets the piece it feeds
-            // (both ends of a two-way beam)
+            // a slight shadow at each end, where the beam meets a piece
             const width = (beamWidths(srcLevel).outer + beamWidths(srcLevel).inner) / 2;
             const tuck = beamWidths(srcLevel).outer * 0.6;
-            if (t1 >= 0.95) shadeBeamEnd(a, b, tuck, width);
-            if (twoWay && t0 <= 0.05) shadeBeamEnd(b, a, tuck, width);
+            const shade = {alpha: Board.BEAM_SHADOW};
+            if (t1 >= 0.95) shadeBeamEnd(ctx, a, b, tuck, width, shade);   // where it enters its target
+            if (t0 <= 0.05) shadeBeamEnd(ctx, b, a, tuck, width, shade);   // where it leaves its own piece
 
             // a bright head marks where the beam is while it travels
             ctx.globalAlpha = 1;

@@ -23,11 +23,12 @@ export function wireLinks(grid, gridScale) {
 }
 
 // Pure: for every cell hit by a non-adjacent ("skip") link, the source cells
-// hitting it, in a stable order. Map key is "x,y" of the target.
-export function skipHits(links) {
+// hitting it, in a stable order. Map key is "x,y" of the target. With
+// includeAdjacent, adjacent hits count too (the "all dots" mode).
+export function skipHits(links, includeAdjacent = false) {
     const hits = new Map();
     for (const {from, to, skip} of links) {
-        if (!skip) continue;
+        if (!skip && !includeAdjacent) continue;
         const key = `${to.x},${to.y}`;
         if (!hits.has(key)) hits.set(key, []);
         hits.get(key).push({x: from.x, y: from.y});

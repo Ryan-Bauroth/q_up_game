@@ -1,5 +1,5 @@
 import {Node} from "./node.js";
-import {drawPieceShape, colorForNode, bodyEdgeDistance} from "./pieces.js";
+import {drawPieceShape, colorForNode, bodyEdgeDistance, shadeBeamEnd} from "./pieces.js";
 
 // "How to play": a short, skippable card that opens only from the ? button.
 // Each step has a heading, a few plain sentences, and a small diagram drawn
@@ -14,25 +14,26 @@ const piece = (abilities, charges = 1, locked = false) =>
 const PIECE = 56;                 // diagram piece size in CSS pixels
 const W = 380, H = 124;           // diagram size in CSS pixels
 
-// A beam between two pieces, running edge to edge in the sender's color.
+// A beam between two pieces, running edge to edge in the sender's color, with
+// a slight shadow at each end where it meets a piece (like on the board).
 function beam(ctx, a, nodeA, b, nodeB) {
     const angle = Math.atan2(b.y - a.y, b.x - a.x);
-    const from = bodyEdgeDistance(nodeA, PIECE, angle) - 4;
-    const to = bodyEdgeDistance(nodeB, PIECE, angle + Math.PI) - 4;
+    const tuck = 5;
+    const from = bodyEdgeDistance(nodeA, PIECE, angle) - tuck;
+    const to = bodyEdgeDistance(nodeB, PIECE, angle + Math.PI) - tuck;
     const p = {x: a.x + Math.cos(angle) * from, y: a.y + Math.sin(angle) * from};
     const q = {x: b.x - Math.cos(angle) * to, y: b.y - Math.sin(angle) * to};
-    const {fill, edge} = colorForNode(nodeA);
     ctx.save();
     ctx.lineCap = "butt";
-    for (const [color, width] of [[edge, 10], [fill, 7]]) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(q.x, q.y);
-        ctx.stroke();
-    }
+    ctx.strokeStyle = colorForNode(nodeA).fill;
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(q.x, q.y);
+    ctx.stroke();
     ctx.restore();
+    shadeBeamEnd(ctx, p, q, tuck, 9);
+    shadeBeamEnd(ctx, q, p, tuck, 9);
 }
 
 function arrowTo(ctx, x1, x2, y) {
@@ -103,7 +104,7 @@ const STEPS = [
         draw(ctx) {
             const y = 56;
             const starter = piece(["runPulseRight"]);
-            const red = piece(["adjacentBurst"]);
+            const red = piece(["passRight"]);   // a red piece with just one arrow, pointing right
             const target = piece([]);
             const a = {x: 54, y}, b = {x: 160, y};
             beam(ctx, a, starter, b, red);
@@ -174,7 +175,7 @@ const STEPS = [
         body: [
             "A dot means another piece will activate it from afar.",
             "The dot's color is the piece that will activate it.",
-            "The three-dot button shows or hides them.",
+            "The dots menu can show dots for every piece, or none.",
             "Ready? Drag the pieces onto level 1 and press Run.",
         ],
         draw(ctx) {
@@ -204,9 +205,22 @@ const STEPS = [
                 ctx.setLineDash([5, 4]);
                 ctx.lineCap = "round";
                 ctx.beginPath();
-                ctx.moveTo(left + cell + 2, rowY(fromRow));
-                ctx.quadraticCurveTo(left + cell + 34, (rowY(fromRow) + rowY(toRow)) / 2, left + cell + 2, rowY(toRow));
+                const x = left + cell + 2, controlX = left + cell + 34;
+                const y1 = rowY(fromRow), y2 = rowY(toRow), controlY = (y1 + y2) / 2;
+                ctx.moveTo(x, y1);
+                ctx.quadraticCurveTo(controlX, controlY, x, y2);
                 ctx.stroke();
+
+                // an arrowhead at the end, pointing along the curve into the target
+                const angle = Math.atan2(y2 - controlY, x - controlX);
+                ctx.setLineDash([]);
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(x, y2);
+                ctx.lineTo(x - Math.cos(angle - 0.5) * 9, y2 - Math.sin(angle - 0.5) * 9);
+                ctx.lineTo(x - Math.cos(angle + 0.5) * 9, y2 - Math.sin(angle + 0.5) * 9);
+                ctx.closePath();
+                ctx.fill();
                 ctx.restore();
             };
             const caption = (x, text) => {

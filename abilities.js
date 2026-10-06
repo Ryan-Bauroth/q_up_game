@@ -130,6 +130,13 @@ export const ABILITIES = {
         trigger: TRIGGERS.ON_ACTIVATED,
         target: offsets([[2, 2], [-2, 2], [2, -2], [-2, -2]]),
     },
+    passRight: {
+        id: "passRight",
+        short: "Activates the cell to the right.",
+        label: "Pass (right)",
+        trigger: TRIGGERS.ON_ACTIVATED,
+        target: neighborOffset(1, 0),
+    },
     passthroughUpRight: {
         id: "passthroughUpRight",
         short: "Activates the cell up and to the right.",

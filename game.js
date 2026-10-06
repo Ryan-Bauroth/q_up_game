@@ -333,12 +333,33 @@ document.querySelectorAll(".speed-button[data-speed]").forEach(button => {
     });
 });
 
-const dotsToggle = document.getElementById("dots-toggle");
-dotsToggle.addEventListener("click", () => {
-    board.showDots = !board.showDots;
-    dotsToggle.classList.toggle("selected", board.showDots);
-    dotsToggle.setAttribute("aria-pressed", String(board.showDots));
+// Dots menu: a button (the dots icon) that drops down to choose dots for skip
+// hits only (default), for every hit, or none.
+const dotsButton = document.getElementById("dots-menu-button");
+const dotsMenu = document.getElementById("dots-menu");
+const dotsItems = [...dotsMenu.querySelectorAll("[data-mode]")];
+
+function setDotsMenuOpen(open) {
+    dotsMenu.hidden = !open;
+    dotsButton.setAttribute("aria-expanded", String(open));
+}
+
+dotsButton.addEventListener("click", () => setDotsMenuOpen(dotsMenu.hidden));
+dotsItems.forEach(item => item.addEventListener("click", () => {
+    board.dotMode = item.dataset.mode;
+    dotsItems.forEach(other => other.setAttribute("aria-checked", String(other === item)));
     board.drawBoard();
+    setDotsMenuOpen(false);
+    dotsButton.focus();
+}));
+document.addEventListener("mousedown", e => {
+    if (!dotsMenu.hidden && !e.target.closest(".dots-menu-wrap")) setDotsMenuOpen(false);
+});
+document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !dotsMenu.hidden) {
+        setDotsMenuOpen(false);
+        dotsButton.focus();
+    }
 });
 
 // ---- puzzle navigation (Back / Next) ----

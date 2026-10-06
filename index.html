@@ -30,12 +30,9 @@
         <div id="controls">
             <button id="run-button">Run</button>
             <button id="solution-button">Show Solution</button>
+            <button id="help-button" class="help-button" data-tip="How to play" aria-label="How to play">?</button>
         </div>
         <div id="view-controls" role="group" aria-label="Help, animation speed and display">
-            <button id="help-button" class="speed-button help-button" data-tip="How to play" aria-label="How to play">?</button>
-            <button id="dots-toggle" class="speed-button selected" data-tip="Toggle dots" aria-label="Show skip dots" aria-pressed="true">
-                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="5" cy="9" r="2.2" fill="currentColor"/><circle cx="11" cy="9" r="2.2" fill="currentColor"/><circle cx="8" cy="4.5" r="2.2" fill="currentColor"/></svg>
-            </button>
             <button class="speed-button" data-speed="0.5" data-tip="Slow" aria-label="Slow speed">
                 <svg viewBox="0 0 20 16" width="20" height="14" aria-hidden="true"><path d="M2.5 11.5C2.5 6.5 5.5 4 8.5 4s6 2.5 6 7.5z" fill="currentColor"/><circle cx="16.8" cy="8.6" r="2" fill="currentColor"/><path d="M5 11.5v2.4M12 11.5v2.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             </button>
@@ -45,6 +42,16 @@
             <button class="speed-button" data-speed="1000" data-tip="Instant" aria-label="Instant">
                 <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M9.5 1L3 9h4l-1 6 7-9H9z" fill="currentColor" stroke="currentColor" stroke-width="0.6" stroke-linejoin="round"/></svg>
             </button>
+            <div class="dots-menu-wrap">
+                <button id="dots-menu-button" class="speed-button" data-tip="Dots" aria-label="Dots" aria-haspopup="menu" aria-expanded="false">
+                    <svg viewBox="0 0 24 16" width="24" height="14" aria-hidden="true"><circle cx="5" cy="9.5" r="2.1" fill="currentColor"/><circle cx="11" cy="9.5" r="2.1" fill="currentColor"/><circle cx="8" cy="5" r="2.1" fill="currentColor"/><path d="M16.5 6.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div id="dots-menu" class="dots-menu" role="menu" aria-label="Dots" hidden>
+                    <button role="menuitemradio" data-mode="skips" aria-checked="true">Some dots</button>
+                    <button role="menuitemradio" data-mode="all" aria-checked="false">All dots</button>
+                    <button role="menuitemradio" data-mode="none" aria-checked="false">No dots</button>
+                </div>
+            </div>
         </div>
         <div id="result-banner" class="hidden"></div>
     </div>
