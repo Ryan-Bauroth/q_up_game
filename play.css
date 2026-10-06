@@ -1,0 +1,193 @@
+/* The game page: the page around the board takes the paper-and-ink look.
+   The canvas (the board, pieces and beams) is not restyled. */
+
+body.play [hidden] {
+    display: none !important;
+}
+
+/* ---------- top bar ---------- */
+
+body.play .bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 24px 28px 4px;
+}
+
+body.play .bar .title {
+    flex: 1;
+    margin: 0;
+    font: 400 40px/1 var(--font-head);
+}
+
+body.play .bar .help-button {
+    min-width: 46px;
+    font-size: 24px;
+    font-weight: normal;
+}
+
+/* the ? sits at the top right edge, so its tip drops below it and is
+   right-aligned to stay on screen */
+body.play .bar .help-button[data-tip]::after {
+    top: calc(100% + 10px);
+    bottom: auto;
+    left: auto;
+    right: 0;
+    transform: translateY(-2px);
+}
+
+body.play .bar .help-button[data-tip]:hover::after,
+body.play .bar .help-button[data-tip]:focus-visible::after {
+    transform: translateY(0);
+}
+
+/* ---------- layout ---------- */
+
+body.play #game-container {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 24px 28px 56px;
+    gap: 44px;
+    justify-content: center;
+}
+
+/* the board sits in its bezel, like a little screen */
+body.play .screen {
+    width: fit-content;
+    margin: 0 auto;
+    padding: 7px;
+}
+
+body.play .screen canvas {
+    width: auto;
+    height: auto;
+}
+
+body.play #nav-controls {
+    margin-top: 16px;
+}
+
+body.play #hand-label {
+    margin-top: 18px;
+    font-size: 17px;
+    font-weight: normal;
+    color: var(--ink);
+    opacity: 0.6;
+}
+
+/* ---------- the hand: raised tiles ---------- */
+
+body.play #pool {
+    gap: 12px;
+    min-height: 62px;
+    margin-top: 10px;
+}
+
+body.play .pool-node {
+    width: 62px;
+    height: 62px;
+    padding: 5px;
+    --sx: 3px;
+    --sy: 4px;
+}
+
+/* ---------- side panel ---------- */
+
+body.play #summary-box {
+    margin: 0 6px 6px 0;
+}
+
+body.play #summary-panel {
+    border: 0;
+    border-radius: 0;
+    padding: 14px 16px;
+    height: 140px;
+    font-size: 18px;
+}
+
+body.play #controls {
+    gap: 14px;
+    margin-bottom: 6px;
+}
+
+body.play #controls button {
+    font-family: var(--font-body);
+    font-size: 20px;
+    padding: 9px 8px 8px;
+}
+
+body.play #controls #run-button {
+    margin-right: 4px;
+}
+
+body.play #result-banner {
+    background: none;
+    padding: 12px 14px;
+    font-weight: normal;
+    font-size: 21px;
+    margin: 0 6px 6px 0;
+    border-radius: 14px 20px 13px 22px / 20px 13px 22px 14px;
+}
+
+body.play #result-banner.win {
+    background: none;
+    color: var(--green);
+}
+
+body.play #result-banner.lose {
+    background: none;
+    color: var(--coral);
+}
+
+/* ---------- smaller controls: inked, but still (no wobble) ---------- */
+
+body.play .nav-button,
+body.play #solution-button,
+body.play .speed-button {
+    font-family: var(--font-body);
+    font-size: 17px;
+    color: var(--ink);
+    background: var(--white);
+    border: 2.4px solid var(--ink);
+    border-radius: 12px 16px 11px 17px / 16px 11px 17px 12px;
+    box-shadow: 2px 3px 0 var(--ink);
+}
+
+body.play #solution-button {
+    font-size: 19px;
+}
+
+body.play .speed-button.selected {
+    color: var(--white);
+    background: var(--ink);
+    filter: none;
+}
+
+body.play .nav-button:focus-visible,
+body.play #solution-button:focus-visible,
+body.play .speed-button:focus-visible {
+    outline: 3px solid var(--coral);
+    outline-offset: 3px;
+}
+
+/* the tutorial's own Back / Next keep their plain look */
+body.play .tutorial-dialog .nav-button {
+    font-family: inherit;
+    box-shadow: none;
+}
+
+/* ---------- narrow screens ---------- */
+
+@media (max-width: 860px) {
+    body.play #game-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    body.play #side-panel {
+        width: 100%;
+        max-width: 420px;
+    }
+}
