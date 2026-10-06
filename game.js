@@ -4,11 +4,26 @@ import {simulate, cloneGrid} from "./engine.js";
 import {playRun} from "./runner.js";
 import {renderSummary, clearSummary} from "./summary-panel.js";
 import {drawPieceShape, targetCells} from "./pieces.js";
-import {buildFromDefinition, puzzleDefinition, puzzleCount, puzzleName, DEFAULT_SIZE} from "./puzzles.js";
+import {buildFromDefinition} from "./puzzles.js";
 import {generateDefinition} from "./generator.js";
-import {solve} from "./solver.js";
 import {initTutorial} from "./tutorial.js";
 import {canDrag, applyDrop, validatePuzzle} from "./rules.js";
+import {parsePlayParams, playTitle, winMessage, CANVAS_SIZES} from "./play-model.js";
+import {easternDateString} from "./dates.js";
+import {dailyDefinition} from "./daily.js";
+import {loadProgress, saveProgress, recordWin, isDone, browserStorage} from "./progress.js";
+import {startInk} from "./ink.js";
+
+// Which board and which mode this page is for comes from the URL
+// (play.html?size=5&mode=daily). Without a valid one, go back to the home page.
+const params = parsePlayParams(location.search);
+if (!params) {
+    location.replace("index.html");
+    throw new Error("play.html needs ?size=3|5|7&mode=daily|unlimited");
+}
+const gridScale = params.size;
+const isDaily = params.mode === "daily";
+const today = easternDateString();
 
 const canvas = document.getElementById("canvas");
 const poolEl = document.getElementById("pool");
@@ -16,15 +31,20 @@ const handLabel = document.getElementById("hand-label");
 const runButton = document.getElementById("run-button");
 const clearButton = document.getElementById("clear-button");
 const resultBanner = document.getElementById("result-banner");
+const resultText = document.getElementById("result-text");
+const runLabel = document.getElementById("run-label");
 
-const boardSize = 400;
-const gridScale = DEFAULT_SIZE;
+const boardSize = CANVAS_SIZES[gridScale];
+canvas.width = canvas.height = boardSize;
 
 const board = new Board(canvas, boardSize, gridScale);
 
-// The puzzle being played: one of the hand-built ones, or a randomly
-// generated one. Clear Board rebuilds fresh pieces from this definition.
-let activeDefinition = puzzleDefinition(0);
+// The puzzle being played: today's daily puzzle, or a random one in unlimited
+// mode. Clear Board rebuilds fresh pieces from this definition.
+let activeDefinition = isDaily ? dailyDefinition(today, gridScale) : generateDefinition({size: gridScale});
+
+document.getElementById("page-title").textContent = playTitle({size: gridScale, mode: params.mode, today});
+document.title = `Q-Up · ${playTitle({size: gridScale, mode: params.mode, today})}`;
 
 // Loads the current puzzle onto the board and returns its hand.
 function createPuzzle() {
@@ -71,7 +91,7 @@ function renderPool() {
     handLabel.hidden = pool.length === 0;
     pool.forEach((node, index) => {
         const el = document.createElement("div");
-        el.className = "pool-node";
+        el.className = "pool-node up";
         el.dataset.index = String(index);
 
         const pieceCanvas = document.createElement("canvas");
@@ -240,11 +260,29 @@ function setInteractive(interactive) {
     });
 }
 
+let progress = loadProgress(browserStorage());
+
+// What a win says. The first win of a daily puzzle records the day and the
+// streak; winning it again (Keep going, or replaying a finished day) changes nothing.
+function winText() {
+    if (!isDaily) return winMessage({daily: false});
+    const firstWin = !isDone(progress, gridScale, today);
+    if (firstWin) {
+        progress = recordWin(progress, gridScale, today);
+        saveProgress(browserStorage(), progress);
+    }
+    return winMessage({daily: true, firstWin, streak: progress[gridScale].streak});
+}
+
 function showResult(won) {
     resultBanner.classList.remove("hidden", "win", "lose");
     resultBanner.classList.add(won ? "win" : "lose");
-    resultBanner.textContent = won ? "Solved!" : "Not solved.";
+    resultText.textContent = won ? winText() : "Not solved.";
 }
+
+const setRunLabel = text => {
+    runLabel.textContent = text;
+};
 
 // Run replays the simulation as an animation. If the puzzle isn't solved,
 // the failing pieces are highlighted and the board automatically returns to
@@ -279,7 +317,7 @@ runButton.addEventListener("click", async () => {
         clearButton.disabled = false;
         roundOver = true;
         setInteractive(true);
-        runButton.textContent = "Keep going";
+        setRunLabel("Keep going");
         return;
     }
 
@@ -291,7 +329,7 @@ runButton.addEventListener("click", async () => {
     clearButton.disabled = false;
     roundOver = true;
     setInteractive(true);          // pieces can be grabbed straight away
-    runButton.textContent = "Try Again";   // same spot as "Keep going" after a win
+    setRunLabel("Try Again");   // same spot as "Keep going" after a win
 });
 
 function restoreAfterRound() {
@@ -301,7 +339,7 @@ function restoreAfterRound() {
     board.effects = Board.emptyEffects();
     runComplete = false;
     resultBanner.classList.add("hidden");
-    runButton.textContent = "Run";
+    setRunLabel("Run");
     setInteractive(true);
     renderPool();
     clearSummary();
@@ -313,7 +351,7 @@ function restoreAfterRound() {
 // Clear Board: back to the starting puzzle with every movable piece in hand.
 clearButton.addEventListener("click", () => {
     roundOver = false;
-    runButton.textContent = "Run";
+    setRunLabel("Run");
     pool = createPuzzle();
     preRunGrid = null;
     board.effects = Board.emptyEffects();
@@ -362,95 +400,67 @@ document.addEventListener("keydown", e => {
     }
 });
 
-// ---- puzzle navigation (Back / Next) ----
+// ---- new puzzles (unlimited mode only) ----
+// Daily has just the one puzzle, so it has no New / Back / forward.
 const backButton = document.getElementById("back-button");
 const nextButton = document.getElementById("next-button");
 const newButton = document.getElementById("new-button");
-let currentIndex = 0;   // the hand-built puzzle most recently chosen
-let isRandom = false;   // is the current game a randomly generated one?
-const history = [];     // games left behind, most recent last: {definition, index|null}
+const forwardControls = document.getElementById("forward-controls");
+const history = [];     // games left behind, most recent last
 const future = [];      // games you went Back from, so Next can return to them
 
 function updateNav() {
-    // Hand-built levels: Back / Next step through the list.
-    // Random games: Back returns to the game you were just playing; Next goes
-    // forward again to one you came back from (only when there is one); and a
-    // separate New button always makes another random game.
-    backButton.disabled = isRandom ? history.length === 0 : currentIndex <= 0;
-    nextButton.hidden = isRandom && future.length === 0;
-    nextButton.disabled = isRandom ? false : currentIndex >= puzzleCount() - 1;
-    newButton.hidden = !isRandom;
+    if (isDaily) {
+        backButton.hidden = true;
+        forwardControls.hidden = true;
+        return;
+    }
+    // Back returns to the game you were just playing; Next goes forward again to
+    // one you came back from (only when there is one); New always makes another.
+    backButton.disabled = history.length === 0;
+    nextButton.hidden = future.length === 0;
 }
 
 
 // ---- Show Solution ----
 const solutionButton = document.getElementById("solution-button");
-const solutionCache = new Map();
+solutionButton.hidden = isDaily;   // seeing the answer should not count as solving the daily
 
-// Where each hand piece goes in a winning layout: [{x, y, poolIndex}].
-// Generated puzzles carry their solution; hand-built ones are solved on demand.
+// Where each hand piece goes in the stored winning layout: [{x, y, poolIndex}].
 function findPlacements(definition) {
-    if (solutionCache.has(definition)) return solutionCache.get(definition);
-    let placements = null;
-    if (definition.solution) {
-        const used = new Set();
-        placements = definition.solution.map(({x, y, kind}) => {
-            const poolIndex = definition.hand.findIndex((k, i) => k === kind && !used.has(i));
-            used.add(poolIndex);
-            return {x, y, poolIndex};
-        });
-    } else {
-        const fresh = buildFromDefinition(definition);
-        const layout = solve(fresh.grid, fresh.pool, gridScale, 1)[0];
-        if (layout) {
-            placements = layout.map(({x, y, id}) => ({x, y, poolIndex: fresh.pool.findIndex(n => n.id === id)}));
-        }
-    }
-    solutionCache.set(definition, placements);
-    return placements;
+    const used = new Set();
+    return definition.solution.map(({x, y, kind}) => {
+        const poolIndex = definition.hand.findIndex((k, i) => k === kind && !used.has(i));
+        used.add(poolIndex);
+        return {x, y, poolIndex};
+    });
 }
 
 solutionButton.addEventListener("click", () => {
     if (clearButton.disabled) return; // the animation is playing
-    solutionButton.disabled = true;
-    solutionButton.textContent = "Solving…";
-    // let the label paint before the (brief) search
-    setTimeout(() => {
-        const placements = findPlacements(activeDefinition);
-        if (placements) {
-            const fresh = buildFromDefinition(activeDefinition);
-            const placed = new Set();
-            board.grid = fresh.grid;
-            for (const {x, y, poolIndex} of placements) {
-                board.grid[x][y] = fresh.pool[poolIndex];
-                placed.add(poolIndex);
-            }
-            pool = fresh.pool.filter((_, i) => !placed.has(i));
-            roundOver = false;
-            runButton.textContent = "Run";
-            preRunGrid = null;
-            board.effects = Board.emptyEffects();
-            board.previewCells = [];
-            board.hoverCell = null;
-            runComplete = false;
-            resultBanner.classList.add("hidden");
-            setInteractive(true);
-            renderPool();
-            clearSummary();
-            board.drawBoard();
-        }
-        solutionButton.disabled = false;
-        solutionButton.textContent = "Show Solution";
-    }, 30);
+    const fresh = buildFromDefinition(activeDefinition);
+    const placed = new Set();
+    board.grid = fresh.grid;
+    for (const {x, y, poolIndex} of findPlacements(activeDefinition)) {
+        board.grid[x][y] = fresh.pool[poolIndex];
+        placed.add(poolIndex);
+    }
+    pool = fresh.pool.filter((_, i) => !placed.has(i));
+    roundOver = false;
+    setRunLabel("Run");
+    preRunGrid = null;
+    board.effects = Board.emptyEffects();
+    board.previewCells = [];
+    board.hoverCell = null;
+    runComplete = false;
+    resultBanner.classList.add("hidden");
+    setInteractive(true);
+    renderPool();
+    clearSummary();
+    board.drawBoard();
 });
 
 const DICE_ICON = '<svg class="button-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="5" cy="5" r="1.3" fill="currentColor"/><circle cx="11" cy="5" r="1.3" fill="currentColor"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="5" cy="11" r="1.3" fill="currentColor"/><circle cx="11" cy="11" r="1.3" fill="currentColor"/></svg>';
-const pickerEl = document.getElementById("puzzle-picker");
-const pickerButtons = [];
-
-function selectPickerButton(selected) {
-    pickerButtons.forEach(b => b.classList.toggle("selected", b === selected));
-}
 
 // What was on the board (and in the hand) when each game was left, so Back can
 // put it back exactly as it was, including a solution you had set up.
@@ -464,21 +474,16 @@ function saveLayout() {
     });
 }
 
-// Switch to a game. index is the hand-built level number, or null for a
-// random game. The game being left is remembered for Back (unless going Back).
-const currentEntry = () => ({definition: activeDefinition, index: isRandom ? null : currentIndex});
-
-function activateGame(definition, index, {remember = true, restore = false, keepFuture = false} = {}) {
+// Switch to another game. The game being left is remembered for Back (unless
+// going Back).
+function activateGame(definition, {remember = true, restore = false, keepFuture = false} = {}) {
     saveLayout();
     if (remember) {
-        history.push({definition: activeDefinition, index: isRandom ? null : currentIndex});
+        history.push(activeDefinition);
         if (history.length > 50) history.shift();
     }
     if (!keepFuture) future.length = 0;   // a fresh choice ends any "forward" trail
     activeDefinition = definition;
-    isRandom = index === null;
-    if (!isRandom) currentIndex = index;
-    selectPickerButton(isRandom ? randomButton : pickerButtons[index]);
     updateNav();
     clearButton.click();
     // going Back: bring back the layout that was on that board
@@ -490,32 +495,6 @@ function activateGame(definition, index, {remember = true, restore = false, keep
         board.drawBoard();
     }
 }
-
-for (let i = 0; i < puzzleCount(); i++) {
-    const button = document.createElement("button");
-    button.className = "puzzle-button" + (i === 0 ? " selected" : "");
-    button.textContent = String(i + 1);
-    button.title = puzzleName(i);
-    button.addEventListener("click", () => {
-        if (clearButton.disabled) return; // the animation is playing
-        activateGame(puzzleDefinition(i), i);
-    });
-    pickerEl.appendChild(button);
-    pickerButtons.push(button);
-}
-
-// Random: builds a brand-new puzzle that is guaranteed to be completable.
-const randomButton = document.createElement("button");
-randomButton.className = "puzzle-button random-button";
-randomButton.title = "New random puzzle";
-randomButton.setAttribute("aria-label", "New random puzzle");
-randomButton.innerHTML = DICE_ICON;
-randomButton.addEventListener("click", () => {
-    if (clearButton.disabled) return; // the animation is playing
-    activateGame(generateDefinition(), null);
-});
-pickerEl.appendChild(randomButton);
-pickerButtons.push(randomButton);
 
 // ? opens the "How to play" card (it never opens by itself).
 const tutorial = initTutorial(document.getElementById("help-button"));
@@ -544,35 +523,29 @@ if (!hasSeenTutorial()) {
 
 backButton.addEventListener("click", () => {
     if (clearButton.disabled) return;
-    if (isRandom) {
-        const previous = history.pop();
-        if (previous) {
-            future.push(currentEntry());
-            activateGame(previous.definition, previous.index, {remember: false, restore: true, keepFuture: true});
-        }
-    } else if (currentIndex > 0) {
-        activateGame(puzzleDefinition(currentIndex - 1), currentIndex - 1, {restore: true});
+    const previous = history.pop();
+    if (previous) {
+        future.push(activeDefinition);
+        activateGame(previous, {remember: false, restore: true, keepFuture: true});
     }
 });
 nextButton.addEventListener("click", () => {
     if (clearButton.disabled) return;
-    if (isRandom) {
-        // forward again to the game you came back from
-        const forward = future.pop();
-        if (forward) {
-            history.push(currentEntry());
-            activateGame(forward.definition, forward.index, {remember: false, restore: true, keepFuture: true});
-        }
-    } else if (currentIndex < puzzleCount() - 1) {
-        activateGame(puzzleDefinition(currentIndex + 1), currentIndex + 1);
+    // forward again to the game you came back from
+    const forward = future.pop();
+    if (forward) {
+        history.push(activeDefinition);
+        activateGame(forward, {remember: false, restore: true, keepFuture: true});
     }
 });
 newButton.innerHTML = `${DICE_ICON}New`;
+newButton.hidden = isDaily;
 newButton.addEventListener("click", () => {
     if (clearButton.disabled) return;
-    activateGame(generateDefinition(), null);
+    activateGame(generateDefinition({size: gridScale}));
 });
 updateNav();
 
 renderPool();
 board.drawBoard();
+startInk();

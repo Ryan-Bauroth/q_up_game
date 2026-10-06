@@ -1,39 +1,27 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {buildPuzzle, buildFromDefinition, puzzleCount, DEFAULT_SIZE} from "./puzzles.js";
+import {buildFromDefinition, makePiece} from "./puzzles.js";
 import {validatePuzzle} from "./rules.js";
-import {solve} from "./solver.js";
-import {simulate, cloneGrid} from "./engine.js";
 
-for (let i = 0; i < puzzleCount(); i++) {
-    const {name, grid, pool} = buildPuzzle(i);
+const small = {
+    name: "Test",
+    size: 3,
+    locked: [[0, 0, "igniter", 1], [0, 2, "receiver", 2]],
+    hand: ["burster", "pusher"],
+    solution: [{x: 0, y: 1, kind: "burster"}],
+};
 
-    test(`puzzle ${i + 1} (${name}) follows the locked/hand start rule`, () => {
-        assert.doesNotThrow(() => validatePuzzle(grid, pool));
-    });
-
-    test(`puzzle ${i + 1} (${name}) is solvable`, () => {
-        assert.ok(solve(grid, pool, DEFAULT_SIZE, 1).length >= 1);
-    });
-
-    test(`puzzle ${i + 1} (${name}) is not already solved`, () => {
-        assert.equal(solve(grid, [], DEFAULT_SIZE, 1).length, 0);
-    });
-}
-
-test("Echo: the 2-charge Burster fires twice, and the puzzle is won by one Pusher on its left", () => {
-    const index = puzzleCount() - 1;
-    const {name, grid, pool} = buildPuzzle(index);
-    assert.equal(name, "Echo");
-    grid[0][1] = pool[0];
-    const {trace, won} = simulate(cloneGrid(grid, DEFAULT_SIZE), DEFAULT_SIZE);
-    assert.equal(won, true);
-    assert.equal(trace.filter(s => s.sourceX === 1 && s.sourceY === 1).length, 2);
+test("locked pieces start on the board and the hand starts in the tray", () => {
+    const {grid, pool} = buildFromDefinition(small);
+    assert.equal(grid[0][0].locked, true);
+    assert.equal(grid[0][2].maxCharges, 2);
+    assert.equal(grid[0][1].isEmpty, true);
+    assert.equal(pool.length, 2);
+    assert.doesNotThrow(() => validatePuzzle(grid, pool));
 });
 
 test("hand pieces show 1 but are not required to be activated; locked pieces and targets are", () => {
-    const {grid, pool} = buildPuzzle(0);
-    assert.ok(pool.length > 0);
+    const {grid, pool} = buildFromDefinition(small);
     assert.ok(pool.every(piece => piece.required === false));
     assert.ok(pool.every(piece => piece.charges === 1));   // the number shown on a hand piece is always 1
     for (const column of grid) {
@@ -49,4 +37,20 @@ test("a definition's size sets the grid size (5 when it has none)", () => {
     assert.equal(side({size: 3, locked: [], hand: []}), 3);
     assert.equal(side({size: 7, locked: [], hand: []}), 7);
     assert.equal(buildFromDefinition({size: 7, locked: [], hand: []}).grid[6].length, 7);
+});
+
+test("every call builds fresh pieces, so a puzzle can be reset", () => {
+    const first = buildFromDefinition(small);
+    first.grid[0][0].charges = 0;
+    const second = buildFromDefinition(small);
+    assert.equal(second.grid[0][0].charges, 1);
+    assert.notEqual(first.pool[0].id, second.pool[0].id);
+});
+
+test("makePiece makes a piece of a kind with the given charges", () => {
+    const piece = makePiece("octo", 2, true);
+    assert.equal(piece.charges, 2);
+    assert.equal(piece.locked, true);
+    assert.equal(piece.required, true);
+    assert.deepEqual(piece.abilities, ["octoBurst"]);
 });
