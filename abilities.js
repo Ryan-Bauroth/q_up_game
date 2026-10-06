@@ -43,6 +43,14 @@ function columnPulse(x, y, board) {
     return out;
 }
 
+function rowPulse(x, y, board) {
+    const out = [];
+    for (let i = 0; i < board.gridScale; i++) {
+        if (i !== x) out.push({x: i, y});
+    }
+    return out;
+}
+
 const offsets = list => (x, y) => list.map(([dx, dy]) => ({x: x + dx, y: y + dy}));
 
 export const ABILITIES = {
@@ -184,14 +192,25 @@ export const ABILITIES = {
         short: "Activates its whole column.",
         label: "Column Pulse",
         line: true,
+        axis: "column",
         trigger: TRIGGERS.ON_ACTIVATED,
         target: columnPulse,
+    },
+    rowPulse: {
+        id: "rowPulse",
+        short: "Activates its whole row.",
+        label: "Row Pulse",
+        line: true,
+        axis: "row",
+        trigger: TRIGGERS.ON_ACTIVATED,
+        target: rowPulse,
     },
     rowSweep: {
         id: "rowSweep",
         short: "Activates every other cell in its row.",
         label: "Row Sweep",
         line: true,
+        axis: "row",
         trigger: TRIGGERS.ON_ACTIVATED,
         target: rowSweep,
     },
@@ -210,4 +229,10 @@ export function isStarter(node) {
 // Beams sweep a whole line (a column or row) rather than a few set cells.
 export function isBeam(node) {
     return node.abilities.some(id => ABILITIES[id]?.line === true);
+}
+
+// Which way a beam piece sweeps: "column" or "row" (null for other pieces).
+// The two axes get different colors.
+export function beamAxis(node) {
+    return node.abilities.map(id => ABILITIES[id]).find(ability => ability?.line)?.axis ?? null;
 }

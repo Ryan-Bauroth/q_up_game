@@ -13,6 +13,7 @@ export const KINDS = {
     relay: {summary: "Relay", abilities: ["lineSkip2Right"]},
     knight: {summary: "Knight", abilities: ["knightJump"]},
     column: {summary: "Column", abilities: ["columnPulse"]},
+    row: {summary: "Row", abilities: ["rowPulse"]},
     pulseUp: {summary: "Pulse Up", abilities: ["runPulseUp"]},
     pulseLeft: {summary: "Pulse Left", abilities: ["runPulseLeft"]},
     duo: {summary: "Duo", abilities: ["runPair"]},

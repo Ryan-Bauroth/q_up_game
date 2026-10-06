@@ -1,9 +1,10 @@
-import {ABILITIES, isStarter} from "./abilities.js";
+import {ABILITIES, beamAxis, isStarter} from "./abilities.js";
 import {pieceType, skipDepth} from "./pieces.js";
 
 // The piece is titled by its color; a red piece that skips tiles (the one
 // with the corner marks) is "Red w/ outline".
 const COLOR_NAMES = {receiver: "Teal", starter: "Yellow", beam: "Purple"};
+const ROW_BEAM_NAME = "Blue";
 
 // Pure: the short description shown when you hover a piece: its color as the
 // title, then quick facts (as bullet points), then a one-sentence description
@@ -11,7 +12,9 @@ const COLOR_NAMES = {receiver: "Teal", starter: "Yellow", beam: "Purple"};
 // "Activations needed" is how many more times the piece must be activated to reach 0.
 export function describePiece(node) {
     const type = pieceType(node);
-    const title = COLOR_NAMES[type] ?? (skipDepth(node) > 0 ? "Red w/ outline" : "Red");
+    const title = type === "beam" && beamAxis(node) === "row"
+        ? ROW_BEAM_NAME
+        : COLOR_NAMES[type] ?? (skipDepth(node) > 0 ? "Red w/ outline" : "Red");
     const starter = isStarter(node);
     const needed = starter
         ? "none"

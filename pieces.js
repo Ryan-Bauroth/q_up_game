@@ -1,4 +1,4 @@
-import {ABILITIES, isBeam, isStarter} from "./abilities.js";
+import {ABILITIES, beamAxis, isBeam, isStarter} from "./abilities.js";
 
 // Probe a selector from the middle of a big empty board so edge clipping
 // never hides a target; offsets are relative to the source cell.
@@ -41,6 +41,7 @@ export const PALETTE = {
     reactor: {fill: "#d65a43", edge: "#92372a"},
     starter: {fill: "#d4a017", edge: "#8a6508"},
     beam: {fill: "#7b5fc4", edge: "#4f3a8c"},
+    beamRow: {fill: "#4a7fc7", edge: "#2f5593"},   // row beams: a blue next to the column beams' violet
 };
 
 export function pieceType(node) {
@@ -51,7 +52,8 @@ export function pieceType(node) {
 }
 
 export function colorForNode(node) {
-    return PALETTE[pieceType(node)];
+    const type = pieceType(node);
+    return type === "beam" && beamAxis(node) === "row" ? PALETTE.beamRow : PALETTE[type];
 }
 
 // Unique tip directions (radians) for all of a node's abilities. A tip is a

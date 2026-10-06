@@ -107,3 +107,19 @@ test("starters in the same row fire left to right", () => {
 
     assert.deepEqual(trace.map(s => `${s.sourceX},${s.sourceY}`), ["1,0", "3,0"]);
 });
+
+test("a Row piece activates every other cell in its row, and not itself", () => {
+    const grid = makeGrid(3);
+    grid[1][0] = new Node({id: 1, charges: 1, abilities: ["runPulseDown"]});  // hits (1,1)
+    grid[1][1] = new Node({id: 2, charges: 1, abilities: ["rowPulse"]});
+    grid[0][1] = new Node({id: 3, charges: 1, abilities: []});
+    grid[2][1] = new Node({id: 4, charges: 1, abilities: []});
+    grid[1][2] = new Node({id: 5, charges: 1, abilities: []});                // same column, not hit
+
+    const result = simulate(grid, 3);
+
+    assert.equal(grid[0][1].charges, 0);
+    assert.equal(grid[2][1].charges, 0);
+    assert.equal(grid[1][2].charges, 1);
+    assert.equal(result.won, false);
+});

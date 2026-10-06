@@ -64,11 +64,14 @@ test("bodies sit flat when the arrows don't land on corners", () => {
 });
 
 test("whole-line pieces are their own type with their own color and a capsule body", () => {
-    for (const id of ["columnPulse", "rowSweep"]) {
+    for (const id of ["columnPulse", "rowPulse", "rowSweep"]) {
         assert.equal(pieceType(piece([id])), "beam");
         assert.equal(bodyKind(piece([id])), "capsule");
-        assert.equal(colorForNode(piece([id])), PALETTE.beam);
     }
+    // columns are violet, rows are a blue beside it
+    assert.equal(colorForNode(piece(["columnPulse"])), PALETTE.beam);
+    assert.equal(colorForNode(piece(["rowPulse"])), PALETTE.beamRow);
+    assert.equal(colorForNode(piece(["rowSweep"])), PALETTE.beamRow);
     assert.equal(pieceType(piece(["adjacentBurst"])), "reactor");
     assert.equal(bodyKind(piece(["adjacentBurst"])), "polygon");
 });
