@@ -1,5 +1,8 @@
-const express = require("express");
-const path = require("path");
+import express from "express";
+import {fileURLToPath} from "url";
+import {dirname} from "path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = 3000;

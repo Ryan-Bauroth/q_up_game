@@ -1,29 +1,40 @@
 export class Node {
-    constructor(id = 0, summary = "", charges = 0, activations = [], abilities = []){
+    constructor({id = 0, summary = "", charges = 0, abilities = [], locked = false} = {}) {
         this.id = id;
+        // locked pieces start on the board and can't be moved or replaced
+        this.locked = locked;
         this.summary = summary;
+        this.maxCharges = charges;
         this.charges = charges;
-        // array of directions ie: [{x: 0, y: -1}, {x: 1, y: 0}]
-        // => node below this node and node to the right of this node
-        this.activations = activations;
-        // array of ability ids
+        // array of ability ids, resolved against the catalog in abilities.js
         this.abilities = abilities;
     }
 
-    run(x, y){
-        this.charges = this.charges - 1;
-        let activated_nodes = this.calculate_activations(x, y);
-        return {
-            activated_nodes: activated_nodes,
-            abilities: this.abilities
-        };
+    get isEmpty() {
+        return this.id === 0;
     }
 
-    calculate_activations(x, y){
-        let arr = []
-        for(const activation of this.activations){
-            arr.append([x + activation.x, y + activation.y]);
-        }
-        return arr;
+    get isDepleted() {
+        return this.charges <= 0;
     }
+
+    // Consumes one charge if available. Returns true if it actually fired,
+    // false if it absorbed harmlessly (empty cell or already depleted).
+    activate() {
+        if (this.isEmpty) return false;
+        if (this.charges <= 0) {
+            this.charges = 0;
+            return false;
+        }
+        this.charges -= 1;
+        return true;
+    }
+
+    clone() {
+        return new Node({id: this.id, summary: this.summary, charges: this.maxCharges, abilities: [...this.abilities], locked: this.locked});
+    }
+}
+
+export function makeEmptyNode() {
+    return new Node({id: 0, summary: "", charges: 0, abilities: []});
 }

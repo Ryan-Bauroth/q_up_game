@@ -2,12 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Canvas Debug Game</title>
+    <title>Q-Up-Inspired Puzzle</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="canvas-container">
-    <canvas id="canvas" width="700" height="700">Error</canvas>
+<div id="game-container">
+    <div id="canvas-container">
+        <div id="puzzle-picker" role="group" aria-label="Puzzle"></div>
+        <canvas id="canvas" width="400" height="400">Error</canvas>
+        <div id="nav-controls" role="group" aria-label="Change puzzle">
+            <button id="back-button" class="nav-button">&lsaquo; Back</button>
+            <button id="next-button" class="nav-button">Next &rsaquo;</button>
+        </div>
+        <div id="pool"></div>
+    </div>
+    <div id="side-panel">
+        <div id="summary-panel">Hover or drag a node to see details.</div>
+        <div id="result-banner" class="hidden"></div>
+        <button id="keep-button" class="hidden">Keep Board</button>
+        <div id="controls">
+            <button id="run-button">Run</button>
+            <button id="clear-button">Clear Board</button>
+        </div>
+        <button id="solution-button">Show Solution</button>
+        <div id="view-controls" role="group" aria-label="Animation speed and display">
+            <button id="dots-toggle" class="speed-button selected" title="Show skip dots" aria-label="Show skip dots" aria-pressed="true">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="5" cy="9" r="2.2" fill="currentColor"/><circle cx="11" cy="9" r="2.2" fill="currentColor"/><circle cx="8" cy="4.5" r="2.2" fill="currentColor"/></svg>
+            </button>
+            <button class="speed-button" data-speed="0.5" title="Slow" aria-label="Slow speed">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4.5 3l8 5-8 5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="speed-button selected" data-speed="1.2" title="Normal speed" aria-label="Normal speed">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 2l9 6-9 6z" fill="currentColor"/></svg>
+            </button>
+            <button class="speed-button" data-speed="1000" title="Instant" aria-label="Instant">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M9.5 1L3 9h4l-1 6 7-9H9z" fill="currentColor" stroke="currentColor" stroke-width="0.6" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+    </div>
 </div>
 <script type="module" src="game.js"></script>
 </body>
