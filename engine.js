@@ -33,34 +33,38 @@ export function simulate(grid, gridScale) {
         return true;
     }
 
-    // Seed phase: every node with an onRun ability is activated once by the Run press.
-    for (let x = 0; x < gridScale; x++) {
-        for (let y = 0; y < gridScale; y++) {
+    // Resolves everything one starter set off, before the next starter fires.
+    // Every trace step records the starter it came from as `root`.
+    function drain(root) {
+        while (queue.length > 0) {
+            const {x, y, triggerType} = queue.shift();
             const node = grid[x][y];
-            if (node.isEmpty) continue;
-            if (isStarter(node)) tryActivate(x, y, TRIGGERS.ON_RUN);
+            const matchingAbilities = node.abilities
+                .map(id => ABILITIES[id])
+                .filter(ability => ability && ability.trigger === triggerType);
+
+            for (const ability of matchingAbilities) {
+                const targets = ability.target(x, y, boardShim).filter(t => inBounds(t.x, t.y));
+                const stepTargets = [];
+
+                for (const t of targets) {
+                    const targetNode = grid[t.x][t.y];
+                    const consumed = tryActivate(t.x, t.y, TRIGGERS.ON_ACTIVATED);
+                    stepTargets.push({x: t.x, y: t.y, consumed, id: targetNode.id});
+                }
+
+                trace.push({sourceX: x, sourceY: y, abilityId: ability.id, targets: stepTargets, root});
+            }
         }
     }
 
-    // Cascade phase.
-    while (queue.length > 0) {
-        const {x, y, triggerType} = queue.shift();
-        const node = grid[x][y];
-        const matchingAbilities = node.abilities
-            .map(id => ABILITIES[id])
-            .filter(ability => ability && ability.trigger === triggerType);
-
-        for (const ability of matchingAbilities) {
-            const targets = ability.target(x, y, boardShim).filter(t => inBounds(t.x, t.y));
-            const stepTargets = [];
-
-            for (const t of targets) {
-                const targetNode = grid[t.x][t.y];
-                const consumed = tryActivate(t.x, t.y, TRIGGERS.ON_ACTIVATED);
-                stepTargets.push({x: t.x, y: t.y, consumed, id: targetNode.id});
-            }
-
-            trace.push({sourceX: x, sourceY: y, abilityId: ability.id, targets: stepTargets});
+    // Run press: starters fire one at a time in reading order (top-left to
+    // top-right, then down a row), each one's whole chain finishing first.
+    for (let y = 0; y < gridScale; y++) {
+        for (let x = 0; x < gridScale; x++) {
+            const node = grid[x][y];
+            if (node.isEmpty || !isStarter(node)) continue;
+            if (tryActivate(x, y, TRIGGERS.ON_RUN)) drain({x, y});
         }
     }
 

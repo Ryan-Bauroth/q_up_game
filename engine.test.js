@@ -79,3 +79,31 @@ test("another piece's output never activates a starter", () => {
     const burst = trace.find(s => s.abilityId === "adjacentBurst");
     assert.equal(burst.targets.find(t => t.x === 0 && t.y === 0).consumed, false);
 });
+
+test("starters fire one at a time in reading order, each chain finishing before the next starts", () => {
+    const grid = makeGrid(3);
+    // Reading order goes row by row, so (2,0) comes before (0,1).
+    grid[2][0] = new Node({id: 1, charges: 1, abilities: ["runPulseDown"]}); // starter A, hits (2,1)
+    grid[2][1] = new Node({id: 2, charges: 1, abilities: ["pairV"]});        // relays to (2,2)
+    grid[2][2] = new Node({id: 3, charges: 1, abilities: []});
+    grid[0][1] = new Node({id: 4, charges: 1, abilities: ["runPulseDown"]}); // starter B, hits (0,2)
+    grid[0][2] = new Node({id: 5, charges: 1, abilities: []});
+
+    const {trace, won} = simulate(grid, 3);
+
+    assert.equal(won, true);
+    assert.deepEqual(trace.map(s => `${s.sourceX},${s.sourceY}`), ["2,0", "2,1", "0,1"]);
+    assert.deepEqual(trace.map(s => `${s.root.x},${s.root.y}`), ["2,0", "2,0", "0,1"]);
+});
+
+test("starters in the same row fire left to right", () => {
+    const grid = makeGrid(4);
+    grid[3][0] = new Node({id: 1, charges: 1, abilities: ["runPulseDown"]});
+    grid[1][0] = new Node({id: 2, charges: 1, abilities: ["runPulseDown"]});
+    grid[3][1] = new Node({id: 3, charges: 1, abilities: []});
+    grid[1][1] = new Node({id: 4, charges: 1, abilities: []});
+
+    const {trace} = simulate(grid, 4);
+
+    assert.deepEqual(trace.map(s => `${s.sourceX},${s.sourceY}`), ["1,0", "3,0"]);
+});
