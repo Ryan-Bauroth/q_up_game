@@ -1,0 +1,372 @@
+/* Paper and ink: the look of the home page and the page around the game board.
+   The board itself (the canvas) is never styled or wobbled. */
+
+:root {
+    --ink: #25221d;
+    --paper: #f4efe4;
+    --white: #ffffff;
+    --coral: #d65a43;
+    --green: #2b7a46;
+    --font-head: "Caveat Brush", "Segoe Print", "Bradley Hand", cursive;
+    --font-body: "Patrick Hand", "Segoe Print", "Bradley Hand", cursive;
+    /* the three wobble frames (defined by ink.js) */
+    --wobble-1: url(#ink-a);
+    --wobble-2: url(#ink-b);
+    --wobble-3: url(#ink-c);
+    --wobble-step: 0.42s;
+}
+
+body.paper {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 18px;
+    background-color: var(--paper);
+    background-image: radial-gradient(rgba(60, 45, 20, 0.07) 1px, transparent 1.2px), radial-gradient(rgba(60, 45, 20, 0.04) 1px, transparent 1.2px);
+    background-size: 7px 7px, 11px 11px;
+    background-position: 0 0, 3px 4px;
+}
+
+body.paper * {
+    box-sizing: border-box;
+}
+
+body.paper a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* ---------- the wobble ---------- */
+
+@keyframes boil {
+    0% { filter: var(--wobble-1); }
+    33.4% { filter: var(--wobble-2); }
+    66.8% { filter: var(--wobble-3); }
+    100% { filter: var(--wobble-1); }
+}
+
+.wob {
+    filter: var(--wobble-1);
+    animation: boil calc(var(--wobble-step) * 3) steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wob {
+        animation: none;
+    }
+}
+
+/* ---------- raised pieces ----------
+   A raised piece (.up) is its content over a `.line` layer: a hard shadow and
+   a face with an inked edge. Only the `.line` layer wobbles. */
+
+.up {
+    position: relative;
+    isolation: isolate;   /* the .line layer sits behind this piece's own content, never behind the page */
+    --sx: 4px;
+    --sy: 5px;
+    --face: var(--white);
+    --edge: var(--ink);
+    --shade: var(--ink);
+    border-radius: 14px 20px 13px 22px / 20px 13px 22px 14px;
+}
+
+.up > .line {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.up > .line::before,
+.up > .line::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.up > .line::before {
+    background: var(--shade);
+    transform: translate(var(--sx), var(--sy));
+}
+
+.up > .line::after {
+    background: var(--face);
+    border: 2.6px solid var(--edge);
+}
+
+.up.fill {
+    --face: var(--ink);
+    --shade: var(--coral);
+    color: var(--white);
+}
+
+.up.flat {
+    --sx: 0px;
+    --sy: 0px;
+}
+
+.up.flat > .line::before {
+    display: none;
+}
+
+/* a stamp: just an inked coral outline, no shadow */
+.up.stamp {
+    --face: transparent;
+    --edge: var(--coral);
+    color: var(--coral);
+}
+
+.up.stamp > .line::before {
+    display: none;
+}
+
+.up.stamp > .line::after {
+    border-width: 3px;
+}
+
+/* ---------- buttons and pills ---------- */
+
+.btn,
+.pill {
+    appearance: none;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: center;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.btn {
+    padding: 9px 12px 8px;
+    font-size: 20px;
+    --sx: 4px;
+    --sy: 5px;
+}
+
+.pill {
+    padding: 5px 18px 6px;
+    font-size: 20px;
+    --sx: 3px;
+    --sy: 4px;
+}
+
+.btn:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.btn:focus-visible,
+.pill:focus-visible,
+.pool-node:focus-visible,
+body.paper a:focus-visible {
+    outline: 3px solid var(--coral);
+    outline-offset: 4px;
+}
+
+/* ---------- the page frame ---------- */
+
+.wrap {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 30px 28px 48px;
+}
+
+.top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 38px;
+}
+
+.brand {
+    margin: 0;
+    font: 400 64px/1 var(--font-head);
+    letter-spacing: 1px;
+    position: relative;
+    display: inline-block;
+}
+
+.brand .ul {
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    bottom: -10px;
+    width: calc(100% + 8px);
+    height: 12px;
+}
+
+.meta {
+    text-align: right;
+    line-height: 1.35;
+    font-size: 20px;
+}
+
+.meta small {
+    display: block;
+    font-size: 16px;
+    opacity: 0.75;
+}
+
+/* ---------- home: the three mode cards ---------- */
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 34px 28px;
+}
+
+.card {
+    padding: 26px 16px 22px;
+    --sx: 6px;
+    --sy: 7px;
+}
+
+/* the board: a little screen set into the card */
+.screen {
+    position: relative;
+    background: var(--white);
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    padding: 5px 5px 20px;   /* a thicker chin: the buttons overlap it, not the board */
+    box-shadow: inset 0 5px 12px rgba(0, 0, 0, 0.22), inset 0 0 0 4px #e6e0d2;
+}
+
+.screen canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* tags that float above the screen */
+.tag {
+    position: absolute;
+    z-index: 3;
+    --sx: 3px;
+    --sy: 4px;
+}
+
+.tag.size {
+    left: -6px;
+    top: -26px;
+    padding: 2px 14px 3px;
+    font: 400 38px/1.05 var(--font-head);
+    transform: rotate(-3deg);
+}
+
+.tag.streak {
+    right: -4px;
+    top: -18px;
+    padding: 5px 12px;
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transform: rotate(2.5deg);
+}
+
+.tally {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tally .group {
+    position: relative;
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.tally i {
+    display: inline-block;
+    width: 3px;
+    height: 17px;
+    background: var(--ink);
+    border-radius: 3px;
+}
+
+.tally i:nth-child(odd) { transform: rotate(-2deg); }
+.tally i:nth-child(even) { transform: rotate(2deg); }
+
+/* the fifth mark: a slash through the four */
+.tally .group.five::after {
+    content: "";
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    top: 50%;
+    height: 3px;
+    background: var(--ink);
+    border-radius: 3px;
+    transform: rotate(-24deg);
+}
+
+.card .stamp {
+    position: absolute;
+    z-index: 4;
+    right: 2px;
+    top: 74px;
+    padding: 3px 12px;
+    font: 400 28px/1 var(--font-head);
+    letter-spacing: 2px;
+    transform: rotate(-11deg);
+}
+
+.card .btns {
+    display: flex;
+    gap: 12px;
+    margin-top: -17px;
+    padding: 0 6px;
+    position: relative;
+    z-index: 3;
+}
+
+.card .btns .btn {
+    flex: 1;
+}
+
+.card .sub {
+    margin: 14px 0 0;
+    text-align: center;
+    opacity: 0.8;
+}
+
+.foot {
+    margin-top: 44px;
+    text-align: center;
+    font-size: 16px;
+    opacity: 0.7;
+}
+
+/* ---------- narrow screens ---------- */
+
+@media (max-width: 860px) {
+    .cards {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+        margin: 0 auto;
+        gap: 50px;
+    }
+
+    .brand {
+        font-size: 52px;
+    }
+}
+
+@media (max-width: 520px) {
+    .top {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .meta {
+        text-align: left;
+    }
+}

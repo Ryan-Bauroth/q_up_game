@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Q-Up-Inspired Puzzle</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="game-container">
+    <div id="canvas-container">
+        <div id="puzzle-picker" role="group" aria-label="Puzzle"></div>
+        <canvas id="canvas" width="400" height="400">Error</canvas>
+        <div id="nav-controls" role="group" aria-label="Change puzzle">
+            <button id="back-button" class="nav-button">&lsaquo; Back</button>
+            <div id="hand-controls">
+                <button id="clear-button" class="nav-button icon-button" data-tip="Clear board" aria-label="Clear board">
+                    <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M3.2 8a4.8 4.8 0 1 0 1.5-3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M2.6 1.8v3.4h3.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
+            <div id="forward-controls">
+                <button id="next-button" class="nav-button">Next &rsaquo;</button>
+                <button id="new-button" class="nav-button" hidden></button>
+            </div>
+        </div>
+        <div id="hand-label">Your hand</div>
+        <div id="pool"></div>
+    </div>
+    <div id="side-panel">
+        <div id="summary-panel">Hover a piece for details.</div>
+        <div id="controls">
+            <button id="run-button">Run</button>
+            <button id="solution-button">Show Solution</button>
+            <button id="help-button" class="help-button" data-tip="How to play" aria-label="How to play">?</button>
+        </div>
+        <div id="view-controls" role="group" aria-label="Help, animation speed and display">
+            <button class="speed-button" data-speed="0.5" data-tip="Slow" aria-label="Slow speed">
+                <svg viewBox="0 0 20 16" width="20" height="14" aria-hidden="true"><path d="M2.5 11.5C2.5 6.5 5.5 4 8.5 4s6 2.5 6 7.5z" fill="currentColor"/><circle cx="16.8" cy="8.6" r="2" fill="currentColor"/><path d="M5 11.5v2.4M12 11.5v2.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+            <button class="speed-button selected" data-speed="1.2" data-tip="Normal" aria-label="Normal speed">
+                <svg viewBox="0 0 16 16" width="16" height="14" aria-hidden="true"><path d="M2 12.5a6 6 0 1 1 12 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M8 12.5V6.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="8" cy="12.5" r="1.7" fill="currentColor"/></svg>
+            </button>
+            <button class="speed-button" data-speed="1000" data-tip="Instant" aria-label="Instant">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M9.5 1L3 9h4l-1 6 7-9H9z" fill="currentColor" stroke="currentColor" stroke-width="0.6" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="dots-menu-wrap">
+                <button id="dots-menu-button" class="speed-button" data-tip="Dots" aria-label="Dots" aria-haspopup="menu" aria-expanded="false">
+                    <svg viewBox="0 0 24 16" width="24" height="14" aria-hidden="true"><circle cx="5" cy="9.5" r="2.1" fill="currentColor"/><circle cx="11" cy="9.5" r="2.1" fill="currentColor"/><circle cx="8" cy="5" r="2.1" fill="currentColor"/><path d="M16.5 6.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div id="dots-menu" class="dots-menu" role="menu" aria-label="Dots" hidden>
+                    <button role="menuitemradio" data-mode="skips" aria-checked="true">Some dots</button>
+                    <button role="menuitemradio" data-mode="all" aria-checked="false">All dots</button>
+                    <button role="menuitemradio" data-mode="none" aria-checked="false">No dots</button>
+                </div>
+            </div>
+        </div>
+        <div id="result-banner" class="hidden"></div>
+    </div>
+</div>
+
+<div id="tutorial" class="tutorial-overlay" hidden>
+    <div class="tutorial-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+        <button id="tutorial-close" class="tutorial-close" aria-label="Close">&times;</button>
+        <div class="tutorial-content">
+            <canvas id="tutorial-canvas" aria-hidden="true"></canvas>
+            <h2 id="tutorial-title"></h2>
+            <div id="tutorial-legend" hidden></div>
+            <div id="tutorial-body"></div>
+        </div>
+        <div class="tutorial-footer">
+            <div id="tutorial-dots" aria-hidden="true"></div>
+            <div class="tutorial-buttons">
+                <button id="tutorial-back" class="nav-button">Back</button>
+                <button id="tutorial-next" class="nav-button primary">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="module" src="game.js"></script>
+</body>
+</html>
