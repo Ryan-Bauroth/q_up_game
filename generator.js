@@ -2,7 +2,6 @@ import {cloneGrid, simulate} from "./engine.js";
 import {ABILITIES, TRIGGERS} from "./abilities.js";
 import {buildFromDefinition, testedKinds, KINDS, PUZZLE_SIZE} from "./puzzles.js";
 import {isSensible} from "./lint.js";
-import {scorePuzzle, topTheme} from "./score.js";
 
 // Random puzzle generator. A puzzle is completable BY CONSTRUCTION: it first
 // lays out every piece (locked ones and the hand) at random cells, runs the
@@ -12,12 +11,14 @@ import {scorePuzzle, topTheme} from "./score.js";
 // re-checked against the real engine before the puzzle is returned.
 
 // Only pieces from the play-tested levels (1-6) are used: nothing fancy (no
-// row sweeps, no pieces that haven't been tried yet).
+// row sweeps, no pieces that haven't been tried yet), plus the Row piece, which
+// is the tested Column piece turned sideways.
 const isStarterKind = kind => KINDS[kind].abilities.some(id => ABILITIES[id]?.trigger === TRIGGERS.ON_RUN);
 const TESTED_LEVELS = 6;
+const EXTRA_KINDS = ["row"];
 
 export function allowedKinds() {
-    const all = [...testedKinds(TESTED_LEVELS)];
+    const all = [...testedKinds(TESTED_LEVELS), ...EXTRA_KINDS];
     return {
         starters: all.filter(isStarterKind),
         reactors: all.filter(kind => !isStarterKind(kind)),
@@ -128,29 +129,4 @@ export function generateDefinition({rng = Math.random, handSize = 5, minActivati
         return definition;
     }
     throw new Error("could not generate a puzzle");
-}
-
-// Builds candidates in small steps (so the page can stay responsive) and keeps
-// the best-scoring one.
-export function startBest({candidates = 60, ...options} = {}) {
-    let best = null;
-    let made = 0;
-    return {
-        step(count) {
-            for (let i = 0; i < count && made < candidates; i++, made++) {
-                const definition = generateDefinition(options);
-                const {total, themes} = scorePuzzle(definition);
-                if (!best || total > best.total) best = {definition, total, themes};
-            }
-            return made >= candidates;
-        },
-        // the winning theme rides along so the game can show it while testing
-        result: () => ({...best.definition, theme: {...topTheme(best.themes), scores: best.themes}}),
-    };
-}
-
-export function generateBest(options = {}) {
-    const run = startBest(options);
-    while (!run.step(10)) { /* keep building */ }
-    return run.result();
 }

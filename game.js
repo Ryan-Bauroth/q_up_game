@@ -5,8 +5,7 @@ import {playRun} from "./runner.js";
 import {renderSummary, clearSummary} from "./summary-panel.js";
 import {drawPieceShape, targetCells} from "./pieces.js";
 import {buildFromDefinition, puzzleDefinition, puzzleCount, puzzleName, PUZZLE_SIZE} from "./puzzles.js";
-import {startBest, generateBest} from "./generator.js";
-import {createPuzzleCache} from "./puzzle-cache.js";
+import {generateDefinition} from "./generator.js";
 import {solve} from "./solver.js";
 import {initTutorial} from "./tutorial.js";
 import {canDrag, applyDrop, validatePuzzle} from "./rules.js";
@@ -17,7 +16,6 @@ const handLabel = document.getElementById("hand-label");
 const runButton = document.getElementById("run-button");
 const clearButton = document.getElementById("clear-button");
 const resultBanner = document.getElementById("result-banner");
-const themeLabel = document.getElementById("theme-label");
 
 const boardSize = 400;
 const gridScale = PUZZLE_SIZE;
@@ -470,15 +468,6 @@ function saveLayout() {
 // random game. The game being left is remembered for Back (unless going Back).
 const currentEntry = () => ({definition: activeDefinition, index: isRandom ? null : currentIndex});
 
-// Testing aid: random puzzles say which theme they were picked for.
-function showTheme(definition) {
-    const theme = definition.theme;
-    themeLabel.hidden = !theme;
-    if (!theme) return;
-    themeLabel.textContent = `Theme: ${theme.label} (${theme.score.toFixed(2)})`;
-    themeLabel.title = Object.entries(theme.scores).map(([name, score]) => `${name}: ${score.toFixed(2)}`).join("\n");
-}
-
 function activateGame(definition, index, {remember = true, restore = false, keepFuture = false} = {}) {
     saveLayout();
     if (remember) {
@@ -489,7 +478,6 @@ function activateGame(definition, index, {remember = true, restore = false, keep
     activeDefinition = definition;
     isRandom = index === null;
     if (!isRandom) currentIndex = index;
-    showTheme(definition);
     selectPickerButton(isRandom ? randomButton : pickerButtons[index]);
     updateNav();
     clearButton.click();
@@ -516,15 +504,7 @@ for (let i = 0; i < puzzleCount(); i++) {
     pickerButtons.push(button);
 }
 
-// Random boards are built ahead of time, a few at a time between frames, so the
-// button never waits. If none is ready yet, a smaller (quicker) pool is used.
-const puzzleCache = createPuzzleCache({
-    newRun: () => startBest({candidates: 60}),
-    quick: () => generateBest({candidates: 15}),
-});
-puzzleCache.fill();
-
-// Random: takes a pre-built puzzle from the cache (guaranteed completable).
+// Random: builds a brand-new puzzle that is guaranteed to be completable.
 const randomButton = document.createElement("button");
 randomButton.className = "puzzle-button random-button";
 randomButton.title = "New random puzzle";
@@ -532,7 +512,7 @@ randomButton.setAttribute("aria-label", "New random puzzle");
 randomButton.innerHTML = DICE_ICON;
 randomButton.addEventListener("click", () => {
     if (clearButton.disabled) return; // the animation is playing
-    activateGame(puzzleCache.take(), null);
+    activateGame(generateDefinition(), null);
 });
 pickerEl.appendChild(randomButton);
 pickerButtons.push(randomButton);
@@ -590,7 +570,7 @@ nextButton.addEventListener("click", () => {
 newButton.innerHTML = `${DICE_ICON}New`;
 newButton.addEventListener("click", () => {
     if (clearButton.disabled) return;
-    activateGame(puzzleCache.take(), null);
+    activateGame(generateDefinition(), null);
 });
 updateNav();
 

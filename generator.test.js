@@ -1,12 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {generateDefinition, generateBest, startBest, allowedKinds} from "./generator.js";
+import {generateDefinition, allowedKinds} from "./generator.js";
 import {testedKinds} from "./puzzles.js";
 import {buildFromDefinition, PUZZLE_SIZE} from "./puzzles.js";
 import {validatePuzzle} from "./rules.js";
 import {solve} from "./solver.js";
 import {isSensible} from "./lint.js";
-import {scorePuzzle} from "./score.js";
+import {layout} from "./lint.js";
+import {simulate, cloneGrid} from "./engine.js";
 import {ABILITIES} from "./abilities.js";
 import {KINDS} from "./puzzles.js";
 
@@ -53,8 +54,8 @@ test("a bigger hand is supported", () => {
     assert.ok(solve(grid, pool, PUZZLE_SIZE, 1).length >= 1);
 });
 
-test("random puzzles only use pieces from the play-tested levels 1-6", () => {
-    const tested = testedKinds(6);
+test("random puzzles only use pieces from the play-tested levels 1-6, plus the Row piece", () => {
+    const tested = new Set([...testedKinds(6), "row"]);
     const {starters, reactors} = allowedKinds();
     for (const kind of [...starters, ...reactors]) assert.ok(tested.has(kind), kind);
     // nothing fancy and nothing untested
@@ -92,25 +93,26 @@ for (const seed of [21, 22, 23, 24, 25, 26]) {
     });
 }
 
-test("generateBest returns a board at least as good as its first candidate", () => {
-    const first = generateDefinition({rng: seeded(7)});
-    const best = generateBest({rng: seeded(7), candidates: 10});
-    assert.ok(scorePuzzle(best).total >= scorePuzzle(first).total);
-    assert.equal(isSensible(best), true);
+test("the Row piece turns up in random puzzles", () => {
+    assert.ok(allowedKinds().reactors.includes("row"));
+    let seen = 0;
+    for (let seed = 200; seed < 260; seed++) {
+        const definition = generateDefinition({rng: seeded(seed)});
+        const placed = [...definition.locked.map(l => l[2]), ...definition.solution.map(s => s.kind)];
+        if (placed.includes("row")) seen++;
+    }
+    assert.ok(seen > 0, "no Row piece in 60 puzzles");
 });
 
-test("a best-of-N puzzle carries its winning theme, for testing", () => {
-    const best = generateBest({rng: seeded(9), candidates: 8});
-    const {themes} = scorePuzzle(best);
-    assert.equal(best.theme.score, themes[best.theme.name]);
-    assert.equal(best.theme.score, Math.max(...Object.values(themes)));
-    assert.equal(typeof best.theme.label, "string");
-    assert.deepEqual(best.theme.scores, themes);
-});
-
-test("startBest builds in steps and reports when it is done", () => {
-    const run = startBest({rng: seeded(3), candidates: 6});
-    assert.equal(run.step(4), false);
-    assert.equal(run.step(4), true);
-    assert.equal(isSensible(run.result()), true);
+test("no silly locked pieces: each one reaches the board and activates something", () => {
+    for (let seed = 100; seed < 140; seed++) {
+        const definition = generateDefinition({rng: seeded(seed)});
+        const {trace} = simulate(cloneGrid(layout(definition), PUZZLE_SIZE), PUZZLE_SIZE);
+        for (const [x, y, kind] of definition.locked) {
+            if (kind === "receiver") continue;
+            assert.ok(reaches(kind, x, y), `seed ${seed}: locked ${kind} at ${x},${y} points off the board`);
+            const useful = trace.some(s => s.sourceX === x && s.sourceY === y && s.targets.some(t => t.consumed));
+            assert.ok(useful, `seed ${seed}: locked ${kind} at ${x},${y} activates nothing`);
+        }
+    }
 });
