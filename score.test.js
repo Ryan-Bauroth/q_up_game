@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {scorePuzzle} from "./score.js";
+import {scorePuzzle, topTheme, THEME_LABELS} from "./score.js";
 import {generateDefinition} from "./generator.js";
 
 const board = (locked, solution = []) => ({name: "Random", locked, hand: solution.map(s => s.kind), solution});
@@ -54,5 +54,14 @@ test("themes are capped at 1.5 and never negative on generated boards", () => {
         const {themes, total} = scorePuzzle(generateDefinition());
         assert.ok(Number.isFinite(total));
         for (const value of Object.values(themes)) assert.ok(value >= 0 && value <= 1.5, value);
+    }
+});
+
+test("topTheme names the best-scoring theme with a readable label", () => {
+    const top = topTheme({skipChain: 0.2, symmetry: 1.1, picture: 0, singlePath: 0.9});
+    assert.deepEqual(top, {name: "symmetry", label: "symmetry", score: 1.1});
+    // every theme has a label
+    for (const name of ["skipChain", "beamCoverage", "picture", "symmetry", "singlePath", "bottleneck"]) {
+        assert.equal(typeof THEME_LABELS[name], "string", name);
     }
 });

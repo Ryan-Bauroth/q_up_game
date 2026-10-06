@@ -2,7 +2,7 @@ import {cloneGrid, simulate} from "./engine.js";
 import {ABILITIES, TRIGGERS} from "./abilities.js";
 import {buildFromDefinition, testedKinds, KINDS, PUZZLE_SIZE} from "./puzzles.js";
 import {isSensible} from "./lint.js";
-import {scorePuzzle} from "./score.js";
+import {scorePuzzle, topTheme} from "./score.js";
 
 // Random puzzle generator. A puzzle is completable BY CONSTRUCTION: it first
 // lays out every piece (locked ones and the hand) at random cells, runs the
@@ -139,12 +139,13 @@ export function startBest({candidates = 60, ...options} = {}) {
         step(count) {
             for (let i = 0; i < count && made < candidates; i++, made++) {
                 const definition = generateDefinition(options);
-                const {total} = scorePuzzle(definition);
-                if (!best || total > best.total) best = {definition, total};
+                const {total, themes} = scorePuzzle(definition);
+                if (!best || total > best.total) best = {definition, total, themes};
             }
             return made >= candidates;
         },
-        result: () => best.definition,
+        // the winning theme rides along so the game can show it while testing
+        result: () => ({...best.definition, theme: {...topTheme(best.themes), scores: best.themes}}),
     };
 }
 

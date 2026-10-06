@@ -171,3 +171,19 @@ export function scorePuzzle(definition) {
     }
     return {total: Math.max(...Object.values(themes)) + bonus(facts), themes};
 }
+
+// Readable names for the themes, for the testing caption in the game.
+export const THEME_LABELS = {
+    skipChain: "skip chain",
+    beamCoverage: "beam coverage",
+    picture: "picture",
+    symmetry: "symmetry",
+    singlePath: "single path",
+    bottleneck: "bottleneck",
+};
+
+// The best-scoring theme: {name, label, score}.
+export function topTheme(themes) {
+    const [name, score] = Object.entries(themes).reduce((best, entry) => (entry[1] > best[1] ? entry : best));
+    return {name, label: THEME_LABELS[name] ?? name, score};
+}

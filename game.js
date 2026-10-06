@@ -17,6 +17,7 @@ const handLabel = document.getElementById("hand-label");
 const runButton = document.getElementById("run-button");
 const clearButton = document.getElementById("clear-button");
 const resultBanner = document.getElementById("result-banner");
+const themeLabel = document.getElementById("theme-label");
 
 const boardSize = 400;
 const gridScale = PUZZLE_SIZE;
@@ -469,6 +470,15 @@ function saveLayout() {
 // random game. The game being left is remembered for Back (unless going Back).
 const currentEntry = () => ({definition: activeDefinition, index: isRandom ? null : currentIndex});
 
+// Testing aid: random puzzles say which theme they were picked for.
+function showTheme(definition) {
+    const theme = definition.theme;
+    themeLabel.hidden = !theme;
+    if (!theme) return;
+    themeLabel.textContent = `Theme: ${theme.label} (${theme.score.toFixed(2)})`;
+    themeLabel.title = Object.entries(theme.scores).map(([name, score]) => `${name}: ${score.toFixed(2)}`).join("\n");
+}
+
 function activateGame(definition, index, {remember = true, restore = false, keepFuture = false} = {}) {
     saveLayout();
     if (remember) {
@@ -479,6 +489,7 @@ function activateGame(definition, index, {remember = true, restore = false, keep
     activeDefinition = definition;
     isRandom = index === null;
     if (!isRandom) currentIndex = index;
+    showTheme(definition);
     selectPickerButton(isRandom ? randomButton : pickerButtons[index]);
     updateNav();
     clearButton.click();

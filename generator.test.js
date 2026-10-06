@@ -99,6 +99,15 @@ test("generateBest returns a board at least as good as its first candidate", () 
     assert.equal(isSensible(best), true);
 });
 
+test("a best-of-N puzzle carries its winning theme, for testing", () => {
+    const best = generateBest({rng: seeded(9), candidates: 8});
+    const {themes} = scorePuzzle(best);
+    assert.equal(best.theme.score, themes[best.theme.name]);
+    assert.equal(best.theme.score, Math.max(...Object.values(themes)));
+    assert.equal(typeof best.theme.label, "string");
+    assert.deepEqual(best.theme.scores, themes);
+});
+
 test("startBest builds in steps and reports when it is done", () => {
     const run = startBest({rng: seeded(3), candidates: 6});
     assert.equal(run.step(4), false);
