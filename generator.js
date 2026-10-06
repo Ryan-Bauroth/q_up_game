@@ -1,6 +1,6 @@
 import {cloneGrid, simulate} from "./engine.js";
 import {ABILITIES, TRIGGERS} from "./abilities.js";
-import {buildFromDefinition, testedKinds, KINDS, PUZZLE_SIZE} from "./puzzles.js";
+import {buildFromDefinition, testedKinds, KINDS, DEFAULT_SIZE} from "./puzzles.js";
 import {isSensible} from "./lint.js";
 
 // Random puzzle generator. A puzzle is completable BY CONSTRUCTION: it first
@@ -41,13 +41,13 @@ function emptyCellHits(grid, trace) {
 
 // True if the piece, put at (x, y), would reach some other cell on the board.
 function reachesBoard(kind, x, y) {
-    const board = {gridScale: PUZZLE_SIZE};
+    const board = {gridScale: DEFAULT_SIZE};
     return KINDS[kind].abilities.some(id => ABILITIES[id].target(x, y, board).some(t =>
-        t.x >= 0 && t.x < PUZZLE_SIZE && t.y >= 0 && t.y < PUZZLE_SIZE && !(t.x === x && t.y === y)));
+        t.x >= 0 && t.x < DEFAULT_SIZE && t.y >= 0 && t.y < DEFAULT_SIZE && !(t.x === x && t.y === y)));
 }
 
 export function generateDefinition({rng = Math.random, handSize = 5, minActivations = 12, maxAttempts = 80000} = {}) {
-    const size = PUZZLE_SIZE;
+    const size = DEFAULT_SIZE;
     const {starters: STARTER_KINDS, reactors: REACTOR_KINDS} = allowedKinds();
     const pick = list => list[Math.floor(rng() * list.length)];
     const shuffle = list => {

@@ -1,5 +1,5 @@
 import {cloneGrid, simulate} from "./engine.js";
-import {buildFromDefinition, makePiece, PUZZLE_SIZE} from "./puzzles.js";
+import {buildFromDefinition, makePiece, sizeOf} from "./puzzles.js";
 
 // Sanity gate for generated puzzles: rejects boards with pointless pieces.
 
@@ -16,22 +16,23 @@ export function layout(definition, skip = -1) {
     return grid;
 }
 
-const run = grid => simulate(cloneGrid(grid, PUZZLE_SIZE), PUZZLE_SIZE);
+const run = (grid, size) => simulate(cloneGrid(grid, size), size);
 
 export function isSensible(definition) {
+    const size = sizeOf(definition);
     const full = layout(definition);
     if (!full) return false;
-    const result = run(full);
+    const result = run(full, size);
     if (!result.won) return false;
     // not already solved before anything is placed
-    if (run(buildFromDefinition(definition).grid).won) return false;
+    if (run(buildFromDefinition(definition).grid, size).won) return false;
     // every placed piece is needed
     for (let i = 0; i < definition.solution.length; i++) {
-        if (run(layout(definition, i)).won) return false;
+        if (run(layout(definition, i), size).won) return false;
     }
     // every piece that has an output must actually activate something
-    for (let x = 0; x < PUZZLE_SIZE; x++) {
-        for (let y = 0; y < PUZZLE_SIZE; y++) {
+    for (let x = 0; x < size; x++) {
+        for (let y = 0; y < size; y++) {
             const node = full[x][y];
             if (node.isEmpty || node.abilities.length === 0) continue;
             const useful = result.trace.some(s =>

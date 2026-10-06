@@ -58,3 +58,25 @@ test("rejects a board with a piece that activates nothing", () => {
 test("rejects a solution piece placed on an occupied cell", () => {
     assert.equal(isSensible({...good, solution: [{x: 0, y: 2, kind: "burster"}]}), false);
 });
+
+test("a 3x3 board is checked on a 3x3 grid", () => {
+    const small = {
+        name: "Random",
+        size: 3,
+        locked: [[0, 0, "igniter", 1], [0, 2, "receiver", 1], [1, 1, "receiver", 1]],
+        hand: ["burster"],
+        solution: [{x: 0, y: 1, kind: "burster"}],
+    };
+    assert.equal(isSensible(small), true);
+});
+
+test("a 7x7 board is checked on a 7x7 grid", () => {
+    const big = {
+        name: "Random",
+        size: 7,
+        locked: [[6, 5, "igniter", 1], [5, 6, "receiver", 1]],
+        hand: ["burster"],
+        solution: [{x: 6, y: 6, kind: "burster"}],
+    };
+    assert.equal(isSensible(big), true);
+});

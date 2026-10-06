@@ -4,7 +4,7 @@ import {simulate, cloneGrid} from "./engine.js";
 import {playRun} from "./runner.js";
 import {renderSummary, clearSummary} from "./summary-panel.js";
 import {drawPieceShape, targetCells} from "./pieces.js";
-import {buildFromDefinition, puzzleDefinition, puzzleCount, puzzleName, PUZZLE_SIZE} from "./puzzles.js";
+import {buildFromDefinition, puzzleDefinition, puzzleCount, puzzleName, DEFAULT_SIZE} from "./puzzles.js";
 import {generateDefinition} from "./generator.js";
 import {solve} from "./solver.js";
 import {initTutorial} from "./tutorial.js";
@@ -18,7 +18,7 @@ const clearButton = document.getElementById("clear-button");
 const resultBanner = document.getElementById("result-banner");
 
 const boardSize = 400;
-const gridScale = PUZZLE_SIZE;
+const gridScale = DEFAULT_SIZE;
 
 const board = new Board(canvas, boardSize, gridScale);
 

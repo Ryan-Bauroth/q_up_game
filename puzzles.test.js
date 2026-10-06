@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {buildPuzzle, puzzleCount, PUZZLE_SIZE} from "./puzzles.js";
+import {buildPuzzle, buildFromDefinition, puzzleCount, DEFAULT_SIZE} from "./puzzles.js";
 import {validatePuzzle} from "./rules.js";
 import {solve} from "./solver.js";
 import {simulate, cloneGrid} from "./engine.js";
@@ -13,11 +13,11 @@ for (let i = 0; i < puzzleCount(); i++) {
     });
 
     test(`puzzle ${i + 1} (${name}) is solvable`, () => {
-        assert.ok(solve(grid, pool, PUZZLE_SIZE, 1).length >= 1);
+        assert.ok(solve(grid, pool, DEFAULT_SIZE, 1).length >= 1);
     });
 
     test(`puzzle ${i + 1} (${name}) is not already solved`, () => {
-        assert.equal(solve(grid, [], PUZZLE_SIZE, 1).length, 0);
+        assert.equal(solve(grid, [], DEFAULT_SIZE, 1).length, 0);
     });
 }
 
@@ -26,7 +26,7 @@ test("Echo: the 2-charge Burster fires twice, and the puzzle is won by one Pushe
     const {name, grid, pool} = buildPuzzle(index);
     assert.equal(name, "Echo");
     grid[0][1] = pool[0];
-    const {trace, won} = simulate(cloneGrid(grid, PUZZLE_SIZE), PUZZLE_SIZE);
+    const {trace, won} = simulate(cloneGrid(grid, DEFAULT_SIZE), DEFAULT_SIZE);
     assert.equal(won, true);
     assert.equal(trace.filter(s => s.sourceX === 1 && s.sourceY === 1).length, 2);
 });
@@ -41,4 +41,12 @@ test("hand pieces show 1 but are not required to be activated; locked pieces and
             if (!node.isEmpty) assert.equal(node.required, true);
         }
     }
+});
+
+test("a definition's size sets the grid size (5 when it has none)", () => {
+    const side = def => buildFromDefinition(def).grid.length;
+    assert.equal(side({locked: [], hand: []}), 5);
+    assert.equal(side({size: 3, locked: [], hand: []}), 3);
+    assert.equal(side({size: 7, locked: [], hand: []}), 7);
+    assert.equal(buildFromDefinition({size: 7, locked: [], hand: []}).grid[6].length, 7);
 });

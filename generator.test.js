@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {generateDefinition, allowedKinds} from "./generator.js";
 import {testedKinds} from "./puzzles.js";
-import {buildFromDefinition, PUZZLE_SIZE} from "./puzzles.js";
+import {buildFromDefinition, DEFAULT_SIZE} from "./puzzles.js";
 import {validatePuzzle} from "./rules.js";
 import {solve} from "./solver.js";
 import {isSensible} from "./lint.js";
@@ -29,9 +29,9 @@ for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
         assert.doesNotThrow(() => validatePuzzle(grid, pool));
         assert.equal(pool.length, 5);
         // the brute-force solver independently finds a solution
-        assert.ok(solve(grid, pool, PUZZLE_SIZE, 1).length >= 1);
+        assert.ok(solve(grid, pool, DEFAULT_SIZE, 1).length >= 1);
         // not already solved with an empty hand
-        assert.equal(solve(grid, [], PUZZLE_SIZE, 1).length, 0);
+        assert.equal(solve(grid, [], DEFAULT_SIZE, 1).length, 0);
     });
 }
 
@@ -51,7 +51,7 @@ test("a bigger hand is supported", () => {
     const definition = generateDefinition({rng: seeded(5), handSize: 6});
     assert.equal(definition.hand.length, 6);
     const {grid, pool} = buildFromDefinition(definition);
-    assert.ok(solve(grid, pool, PUZZLE_SIZE, 1).length >= 1);
+    assert.ok(solve(grid, pool, DEFAULT_SIZE, 1).length >= 1);
 });
 
 test("random puzzles only use pieces from the play-tested levels 1-6, plus the Row piece", () => {
@@ -69,8 +69,8 @@ test("random puzzles only use pieces from the play-tested levels 1-6, plus the R
     }
 });
 
-const reaches = (kind, x, y) => KINDS[kind].abilities.some(id => ABILITIES[id].target(x, y, {gridScale: PUZZLE_SIZE})
-    .some(t => t.x >= 0 && t.x < PUZZLE_SIZE && t.y >= 0 && t.y < PUZZLE_SIZE));
+const reaches = (kind, x, y) => KINDS[kind].abilities.some(id => ABILITIES[id].target(x, y, {gridScale: DEFAULT_SIZE})
+    .some(t => t.x >= 0 && t.x < DEFAULT_SIZE && t.y >= 0 && t.y < DEFAULT_SIZE));
 
 for (const seed of [21, 22, 23, 24, 25, 26]) {
     test(`random puzzle (seed ${seed}): 1-2 spares, nothing pointless, every piece reaches the board`, () => {
@@ -107,7 +107,7 @@ test("the Row piece turns up in random puzzles", () => {
 test("no silly locked pieces: each one reaches the board and activates something", () => {
     for (let seed = 100; seed < 140; seed++) {
         const definition = generateDefinition({rng: seeded(seed)});
-        const {trace} = simulate(cloneGrid(layout(definition), PUZZLE_SIZE), PUZZLE_SIZE);
+        const {trace} = simulate(cloneGrid(layout(definition), DEFAULT_SIZE), DEFAULT_SIZE);
         for (const [x, y, kind] of definition.locked) {
             if (kind === "receiver") continue;
             assert.ok(reaches(kind, x, y), `seed ${seed}: locked ${kind} at ${x},${y} points off the board`);

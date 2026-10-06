@@ -31,7 +31,10 @@ let nextId = 1;
 export const makePiece = (kind, charges = 1, locked = false, required = true) =>
     new Node({id: nextId++, summary: KINDS[kind].summary, charges, abilities: [...KINDS[kind].abilities], locked, required});
 
-export const PUZZLE_SIZE = 5;
+// A definition may carry its own `size`; ones without (the hand-built levels)
+// are 5x5.
+export const DEFAULT_SIZE = 5;
+export const sizeOf = definition => definition.size ?? DEFAULT_SIZE;
 
 // Each puzzle: a name, the locked pieces as [x, y, kind, charges], and the
 // hand as a list of kinds. Every puzzle is checked for solvability in
@@ -120,8 +123,9 @@ export function puzzleDefinition(index) {
 // can be called again to reset a puzzle. Works for the hand-built puzzles and
 // for generated ones.
 export function buildFromDefinition(def) {
-    const grid = Array.from({length: PUZZLE_SIZE}, () =>
-        Array.from({length: PUZZLE_SIZE}, () => makeEmptyNode())
+    const size = sizeOf(def);
+    const grid = Array.from({length: size}, () =>
+        Array.from({length: size}, () => makeEmptyNode())
     );
     for (const [x, y, kind, charges = 1] of def.locked) {
         grid[x][y] = makePiece(kind, charges, true);
