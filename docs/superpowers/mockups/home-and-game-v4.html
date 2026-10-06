@@ -1,0 +1,167 @@
+<h2>Same, with pure white cards and tags</h2>
+<p class="subtitle">Strong wiggle. Each board is the real crisp game board, recessed in a bezel like a tiny screen. The size label, streak tally and buttons are raised paper tags with hard shadows that overlap the screen's edge. All three cards are always at full strength: no hover glow, no dimming. A finished puzzle is marked only by the stamp.</p>
+
+<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Patrick+Hand&display=swap" rel="stylesheet">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="xa" x="-6%" y="-6%" width="112%" height="112%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="5.5"/></filter>
+  <filter id="xb" x="-6%" y="-6%" width="112%" height="112%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="8"/><feDisplacementMap in="SourceGraphic" scale="5.5"/></filter>
+  <filter id="xc" x="-6%" y="-6%" width="112%" height="112%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="21"/><feDisplacementMap in="SourceGraphic" scale="5.5"/></filter>
+</svg>
+
+<style>
+  .v3 { --ink: #25221d; --paper: #f4efe4; --paper2: #ffffff; --coral: #d65a43; --f1: url(#xa); --f2: url(#xb); --f3: url(#xc); --tick: .42s;
+        background: var(--paper); color: var(--ink); border-radius: 14px; padding: 26px 26px 34px; position: relative; overflow: hidden;
+        font-family: "Patrick Hand", "Segoe Print", "Bradley Hand", cursive; font-size: 17px;
+        background-image: radial-gradient(rgba(60,45,20,.07) 1px, transparent 1.2px), radial-gradient(rgba(60,45,20,.04) 1px, transparent 1.2px);
+        background-size: 7px 7px, 11px 11px; background-position: 0 0, 3px 4px; }
+  .v3 * { box-sizing: border-box; }
+  @keyframes boil3 { 0% { filter: var(--f1) } 33.4% { filter: var(--f2) } 66.8% { filter: var(--f3) } 100% { filter: var(--f1) } }
+  .v3 .wob { animation: boil3 calc(var(--tick) * 3) steps(1) infinite; }
+
+  .v3 .top { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 30px; }
+  .v3 h1 { margin: 0; font: 400 58px/1 "Caveat Brush", cursive; position: relative; display: inline-block; }
+  .v3 h1 .ul { position: absolute; left: -4px; right: -4px; bottom: -8px; height: 12px; }
+  .v3 .meta { text-align: right; line-height: 1.35; font-size: 18px; }
+  .v3 .meta small { display: block; font-size: 15px; opacity: .75; }
+
+  /* a raised paper piece: crisp content over a wobbling outline + hard shadow */
+  .v3 .up { position: relative; background: var(--paper2); border-radius: 14px 20px 13px 22px / 20px 13px 22px 14px; }
+  .v3 .up > .line { position: absolute; inset: 0; pointer-events: none; }
+  .v3 .up > .line::before { content: ""; position: absolute; inset: 0; border: 2.6px solid var(--ink); border-radius: inherit; }
+  .v3 .up > .line::after { content: ""; position: absolute; inset: 0; transform: translate(var(--sx, 4px), var(--sy, 5px)); border-radius: inherit; background: var(--ink); z-index: -1; }
+  .v3 .up > * { position: relative; }
+  .v3 .up > .line { position: absolute; }
+
+  .v3 .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+  .v3 .card { padding: 18px 16px 22px; --sx: 6px; --sy: 7px; }
+
+  /* the board: a little screen set into the card */
+  .v3 .screen { position: relative; margin-top: 8px; background: #fff; border: 3px solid var(--ink); border-radius: 12px; padding: 5px;
+        box-shadow: inset 0 5px 12px rgba(0,0,0,.22), inset 0 0 0 4px #e6e0d2; }
+  .v3 .bd { position: relative; display: grid; grid-template-columns: repeat(var(--n), 1fr); aspect-ratio: 1; width: 100%; background: #fff;
+        background-image: repeating-linear-gradient(0deg, transparent 0 calc(100%/var(--n) - 1px), #d3d3d3 0 calc(100%/var(--n))), repeating-linear-gradient(90deg, transparent 0 calc(100%/var(--n) - 1px), #d3d3d3 0 calc(100%/var(--n))); outline: 1px solid #d3d3d3; }
+  .v3 .cl { position: relative; }
+  .v3 .pc { position: absolute; inset: 14%; display: grid; place-items: center; font: 800 15px/1 system-ui, sans-serif; color: #fff; }
+  .v3 .pc.t { background: #2b9a8f; border-radius: 50%; }
+  .v3 .pc.s { background: #d4a017; clip-path: polygon(50% 6%, 96% 90%, 4% 90%); inset: 10%; }
+  .v3 .pc.r { background: #d65a43; transform: rotate(45deg) scale(.74); border-radius: 22%; }
+  .v3 .pc.c { background: #7b5fc4; border-radius: 99px; inset: 6% 30%; }
+  .v3 .pc.w { background: #4a7fc7; border-radius: 99px; inset: 30% 6%; }
+
+  /* floating labels */
+  .v3 .tag { position: absolute; z-index: 3; --sx: 3px; --sy: 4px; padding: 2px 14px 3px; }
+  .v3 .tag.size { left: -6px; top: -26px; font: 400 38px/1.05 "Caveat Brush", cursive; transform: rotate(-3deg); }
+  .v3 .tag.streak { right: -4px; top: -18px; transform: rotate(2.5deg); font-size: 16px; display: flex; align-items: center; gap: 5px; padding: 5px 12px; }
+  .v3 .tally i { display: inline-block; width: 3px; height: 17px; background: var(--ink); border-radius: 3px; transform: rotate(var(--r, 0deg)); }
+  .v3 .tally .five { position: relative; display: inline-flex; gap: 4px; margin-right: 3px; }
+  .v3 .tally .five::after { content: ""; position: absolute; left: -3px; right: -3px; top: 50%; height: 3px; background: var(--ink); border-radius: 3px; transform: rotate(-24deg); }
+  .v3 .stamp { position: absolute; z-index: 4; right: -10px; bottom: 74px; transform: rotate(-11deg); color: var(--coral); font: 400 28px/1 "Caveat Brush", cursive; letter-spacing: 2px; padding: 3px 12px; background: transparent !important; }
+  .v3 .stamp .line::before { border: 3px solid var(--coral) !important; }
+  .v3 .stamp .line::after { display: none; }
+  .v3 .sub { text-align: center; margin: 12px 0 0; font-size: 17px; opacity: .8; }
+
+  .v3 .btns { display: flex; gap: 12px; margin-top: -16px; position: relative; z-index: 3; padding: 0 6px; }
+  .v3 .btn { flex: 1; text-align: center; padding: 9px 4px 8px; font-size: 19px; --sx: 4px; --sy: 5px; cursor: pointer; }
+  .v3 .btn.fill { background: var(--ink); color: var(--paper2); }
+  .v3 .btn.fill > .line::before { border-color: var(--ink); }
+  .v3 .btn.fill > .line::after { background: var(--coral); }
+
+  /* game page */
+  .v3 .bar { display: flex; align-items: center; gap: 16px; margin-bottom: 26px; }
+  .v3 .bar .title { font: 400 36px/1 "Caveat Brush", cursive; flex: 1; }
+  .v3 .pill { padding: 6px 18px; font-size: 19px; --sx: 3px; --sy: 4px; }
+  .v3 .play { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 34px; align-items: start; }
+  .v3 .play .screen { margin-top: 0; padding: 7px; }
+  .v3 .hand { display: flex; gap: 10px; margin: -14px 0 0 12px; position: relative; z-index: 3; }
+  .v3 .hand .h { width: 56px; height: 56px; padding: 4px; --sx: 3px; --sy: 4px; }
+  .v3 .hand .h .pc { inset: 14%; }
+  .v3 .cap { font-size: 14px; opacity: .65; margin-top: 14px; }
+  .v3 .box { padding: 14px 16px; margin: 0 8px 20px 0; --sx: 4px; --sy: 5px; }
+  .v3 .win { color: #2b7a46; font-size: 21px; }
+</style>
+
+<div class="v3">
+  <div class="top">
+    <h1>Q-Up<svg class="ul wob" viewBox="0 0 200 12" preserveAspectRatio="none"><path d="M2 7 C 40 1, 70 12, 110 6 S 170 2, 198 8" fill="none" stroke="#d65a43" stroke-width="4" stroke-linecap="round"/></svg></h1>
+    <div class="meta">Wednesday, October 7<small>new puzzles in 3h 12m</small></div>
+  </div>
+
+  <div class="row3">
+    <div class="up card"><div class="line wob"></div>
+      <div class="up tag size"><div class="line wob"></div>3 × 3</div>
+      <div class="up tag streak"><div class="line wob"></div><span class="tally"><span class="five"><i style="--r:-2deg"></i><i style="--r:1deg"></i><i style="--r:-1deg"></i><i style="--r:2deg"></i></span><i style="--r:1deg"></i></span></div>
+      <div class="screen"><div class="bd" data-b="s r .|. 1 1|. . 1" style="--n:3"></div></div>
+      <div class="stamp up"><div class="line wob"></div>DONE!</div>
+      <div class="btns"><div class="up btn fill"><div class="line wob"></div>Review</div><div class="up btn"><div class="line wob"></div>Unlimited</div></div>
+      <div class="sub">the mini</div>
+    </div>
+
+    <div class="up card"><div class="line wob"></div>
+      <div class="up tag size"><div class="line wob"></div>5 × 5</div>
+      <div class="up tag streak"><div class="line wob"></div><span class="tally"><i style="--r:-2deg"></i><i style="--r:2deg"></i></span></div>
+      <div class="screen"><div class="bd" data-b="s r . . 1|. . c . .|1 . . w 2|. 2 . . .|1 . r . 1" style="--n:5"></div></div>
+      <div class="btns"><div class="up btn fill"><div class="line wob"></div>Play</div><div class="up btn"><div class="line wob"></div>Unlimited</div></div>
+      <div class="sub">the classic</div>
+    </div>
+
+    <div class="up card"><div class="line wob"></div>
+      <div class="up tag size"><div class="line wob"></div>7 × 7</div>
+      <div class="up tag streak"><div class="line wob"></div>no streak yet</div>
+      <div class="screen"><div class="bd" data-b="s r . . . 1 .|. . c . . . 1|1 . . w 1 . .|. 2 . . . r 1|. . 1 s . . .|r . . 1 . 2 .|1 . . . c . 1" style="--n:7"></div></div>
+      <div class="btns"><div class="up btn fill"><div class="line wob"></div>Play</div><div class="up btn"><div class="line wob"></div>Unlimited</div></div>
+      <div class="sub">the big one</div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:34px">
+  <h3>The game page, same idea</h3>
+  <p class="subtitle">The board sits in its bezel as the "screen"; the Home button, title, hand and Run button float above it.</p>
+  <div class="v3">
+    <div class="bar">
+      <div class="up pill"><div class="line wob"></div>&larr; Home</div>
+      <div class="title">Daily &middot; 5&times;5 &middot; Oct 7</div>
+      <div class="up pill"><div class="line wob"></div>?</div>
+    </div>
+    <div class="play">
+      <div>
+        <div class="screen"><div class="bd" data-b="s r . . 1|. . c . .|1 . . w 2|. 2 . . .|1 . r . 1" style="--n:5"></div></div>
+        <div class="hand" data-h="r w c r">
+        </div>
+        <div class="cap">your hand</div>
+      </div>
+      <div>
+        <div class="up box"><div class="line wob"></div>Hover a piece for details.</div>
+        <div class="up btn fill" style="margin: 0 8px 22px 0"><div class="line wob"></div>Run</div>
+        <div class="up box win"><div class="line wob"></div>Solved! Streak: 3 days</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.bd[data-b]').forEach(function (el) {
+    el.dataset.b.split('|').forEach(function (row) {
+      row.split(' ').forEach(function (tok) {
+        var cell = document.createElement('div');
+        cell.className = 'cl';
+        if (tok !== '.') {
+          var p = document.createElement('div');
+          if (/[0-9]/.test(tok)) { p.className = 'pc t'; p.textContent = tok; }
+          else { p.className = 'pc ' + tok; }
+          cell.appendChild(p);
+        }
+        el.appendChild(cell);
+      });
+    });
+  });
+  document.querySelectorAll('.hand[data-h]').forEach(function (el) {
+    el.dataset.h.split(' ').forEach(function (k) {
+      var h = document.createElement('div'); h.className = 'up h';
+      var ln = document.createElement('div'); ln.className = 'line wob'; h.appendChild(ln);
+      var p = document.createElement('div'); p.className = 'pc ' + k; p.textContent = '1'; h.appendChild(p);
+      el.appendChild(h);
+    });
+  });
+</script>
