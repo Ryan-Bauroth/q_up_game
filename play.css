@@ -60,6 +60,7 @@ body.play .screen {
     padding: 7px;
 }
 
+/* only restores the canvas's intrinsic size inside the bezel */
 body.play .screen canvas {
     width: auto;
     height: auto;
@@ -67,6 +68,11 @@ body.play .screen canvas {
 
 body.play #nav-controls {
     margin-top: 16px;
+}
+
+/* the clear button stays in the middle column even when Back/New are hidden */
+body.play #hand-controls {
+    grid-column: 2;
 }
 
 body.play #hand-label {
@@ -118,6 +124,7 @@ body.play #controls button {
     padding: 9px 8px 8px;
 }
 
+/* makes room for the button's shadow */
 body.play #controls #run-button {
     margin-right: 4px;
 }
@@ -143,7 +150,7 @@ body.play #result-banner.lose {
 
 /* ---------- smaller controls: inked, but still (no wobble) ---------- */
 
-body.play .nav-button,
+body.play #nav-controls .nav-button,
 body.play #solution-button,
 body.play .speed-button {
     font-family: var(--font-body);
@@ -165,17 +172,11 @@ body.play .speed-button.selected {
     filter: none;
 }
 
-body.play .nav-button:focus-visible,
+body.play #nav-controls .nav-button:focus-visible,
 body.play #solution-button:focus-visible,
 body.play .speed-button:focus-visible {
     outline: 3px solid var(--coral);
     outline-offset: 3px;
-}
-
-/* the tutorial's own Back / Next keep their plain look */
-body.play .tutorial-dialog .nav-button {
-    font-family: inherit;
-    box-shadow: none;
 }
 
 /* ---------- narrow screens ---------- */
