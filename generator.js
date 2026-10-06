@@ -2,6 +2,7 @@ import {cloneGrid, simulate} from "./engine.js";
 import {ABILITIES, TRIGGERS} from "./abilities.js";
 import {buildFromDefinition, testedKinds, KINDS, PUZZLE_SIZE} from "./puzzles.js";
 import {isSensible} from "./lint.js";
+import {scorePuzzle} from "./score.js";
 
 // Random puzzle generator. A puzzle is completable BY CONSTRUCTION: it first
 // lays out every piece (locked ones and the hand) at random cells, runs the
@@ -127,4 +128,28 @@ export function generateDefinition({rng = Math.random, handSize = 5, minActivati
         return definition;
     }
     throw new Error("could not generate a puzzle");
+}
+
+// Builds candidates in small steps (so the page can stay responsive) and keeps
+// the best-scoring one.
+export function startBest({candidates = 60, ...options} = {}) {
+    let best = null;
+    let made = 0;
+    return {
+        step(count) {
+            for (let i = 0; i < count && made < candidates; i++, made++) {
+                const definition = generateDefinition(options);
+                const {total} = scorePuzzle(definition);
+                if (!best || total > best.total) best = {definition, total};
+            }
+            return made >= candidates;
+        },
+        result: () => best.definition,
+    };
+}
+
+export function generateBest(options = {}) {
+    const run = startBest(options);
+    while (!run.step(10)) { /* keep building */ }
+    return run.result();
 }

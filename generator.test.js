@@ -1,11 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {generateDefinition, allowedKinds} from "./generator.js";
+import {generateDefinition, generateBest, startBest, allowedKinds} from "./generator.js";
 import {testedKinds} from "./puzzles.js";
 import {buildFromDefinition, PUZZLE_SIZE} from "./puzzles.js";
 import {validatePuzzle} from "./rules.js";
 import {solve} from "./solver.js";
 import {isSensible} from "./lint.js";
+import {scorePuzzle} from "./score.js";
 import {ABILITIES} from "./abilities.js";
 import {KINDS} from "./puzzles.js";
 
@@ -90,3 +91,17 @@ for (const seed of [21, 22, 23, 24, 25, 26]) {
         for (const {x, y, kind} of pieces) assert.ok(reaches(kind, x, y), `${kind} at ${x},${y} points nowhere`);
     });
 }
+
+test("generateBest returns a board at least as good as its first candidate", () => {
+    const first = generateDefinition({rng: seeded(7)});
+    const best = generateBest({rng: seeded(7), candidates: 10});
+    assert.ok(scorePuzzle(best).total >= scorePuzzle(first).total);
+    assert.equal(isSensible(best), true);
+});
+
+test("startBest builds in steps and reports when it is done", () => {
+    const run = startBest({rng: seeded(3), candidates: 6});
+    assert.equal(run.step(4), false);
+    assert.equal(run.step(4), true);
+    assert.equal(isSensible(run.result()), true);
+});
