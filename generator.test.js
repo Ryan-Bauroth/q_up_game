@@ -1,15 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {generateDefinition, allowedKinds} from "./generator.js";
-import {testedKinds} from "./puzzles.js";
-import {buildFromDefinition, DEFAULT_SIZE} from "./puzzles.js";
+import {generateDefinition, SIZES, SIZE_CONFIG, STARTER_KINDS, REACTOR_KINDS} from "./generator.js";
+import {buildFromDefinition} from "./puzzles.js";
+import {KINDS} from "./puzzles.js";
 import {validatePuzzle} from "./rules.js";
-import {solve} from "./solver.js";
-import {isSensible} from "./lint.js";
-import {layout} from "./lint.js";
+import {isSensible, layout} from "./lint.js";
 import {simulate, cloneGrid} from "./engine.js";
 import {ABILITIES} from "./abilities.js";
-import {KINDS} from "./puzzles.js";
 
 // small seeded generator so failures are reproducible
 function seeded(seed) {
@@ -22,97 +19,101 @@ function seeded(seed) {
     };
 }
 
-for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
-    test(`random puzzle (seed ${seed}) is valid and completable`, () => {
-        const definition = generateDefinition({rng: seeded(seed)});
-        const {grid, pool} = buildFromDefinition(definition);
-        assert.doesNotThrow(() => validatePuzzle(grid, pool));
-        assert.equal(pool.length, 5);
-        // the brute-force solver independently finds a solution
-        assert.ok(solve(grid, pool, DEFAULT_SIZE, 1).length >= 1);
-        // not already solved with an empty hand
-        assert.equal(solve(grid, [], DEFAULT_SIZE, 1).length, 0);
-    });
+const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
+
+for (const size of SIZES) {
+    for (const seed of SEEDS) {
+        test(`${size}x${size} puzzle (seed ${seed}) is valid, sensible and the right shape`, () => {
+            const definition = generateDefinition({size, rng: seeded(seed)});
+            const config = SIZE_CONFIG[size];
+            assert.equal(definition.size, size);
+
+            // pieces start where the rules say: locked on the board, the rest in the hand
+            const {grid, pool} = buildFromDefinition(definition);
+            assert.equal(grid.length, size);
+            assert.doesNotThrow(() => validatePuzzle(grid, pool));
+
+            // the stored solution wins, every piece in it is needed, nothing is pointless
+            assert.equal(isSensible(definition), true);
+
+            // hand: the placed pieces plus 1-2 spares
+            const placed = definition.solution.length;
+            const spares = definition.hand.length - placed;
+            assert.ok(placed >= config.hand[0] && placed <= config.hand[1], `placed ${placed}`);
+            assert.ok(spares === 1 || spares === 2, `spares ${spares}`);
+            const hand = [...definition.hand];
+            for (const {kind} of definition.solution) {
+                const i = hand.indexOf(kind);
+                assert.ok(i >= 0, kind);
+                hand.splice(i, 1);
+            }
+
+            // number of locked targets is within the size's range
+            const targets = definition.locked.filter(([, , kind]) => kind === "receiver").length;
+            assert.ok(targets >= config.targets[0] && targets <= config.targets[1], `targets ${targets}`);
+
+            // only allowed piece kinds
+            const allowed = new Set([...STARTER_KINDS, ...REACTOR_KINDS, "receiver"]);
+            for (const kind of [...definition.locked.map(l => l[2]), ...definition.hand]) assert.ok(allowed.has(kind), kind);
+        });
+    }
 }
 
-test("generation is deterministic for a given seed", () => {
-    const a = generateDefinition({rng: seeded(42)});
-    const b = generateDefinition({rng: seeded(42)});
-    assert.deepEqual(a, b);
+test("generation is deterministic for a given seed, at every size", () => {
+    for (const size of SIZES) {
+        const a = generateDefinition({size, rng: seeded(42)});
+        const b = generateDefinition({size, rng: seeded(42)});
+        assert.deepEqual(a, b);
+    }
 });
 
 test("different seeds give different puzzles", () => {
-    const a = generateDefinition({rng: seeded(10)});
-    const b = generateDefinition({rng: seeded(11)});
-    assert.notDeepEqual(a.locked, b.locked);
-});
-
-test("a bigger hand is supported", () => {
-    const definition = generateDefinition({rng: seeded(5), handSize: 6});
-    assert.equal(definition.hand.length, 6);
-    const {grid, pool} = buildFromDefinition(definition);
-    assert.ok(solve(grid, pool, DEFAULT_SIZE, 1).length >= 1);
-});
-
-test("random puzzles only use pieces from the play-tested levels 1-6, plus the Row piece", () => {
-    const tested = new Set([...testedKinds(6), "row"]);
-    const {starters, reactors} = allowedKinds();
-    for (const kind of [...starters, ...reactors]) assert.ok(tested.has(kind), kind);
-    // nothing fancy and nothing untested
-    for (const kind of ["sweep", "duo", "relay", "hop", "dive", "pulseUp"]) {
-        assert.ok(![...starters, ...reactors].includes(kind), kind);
-    }
-    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) {
-        const definition = generateDefinition({rng: seeded(seed)});
-        const used = [...definition.locked.map(l => l[2]).filter(k => k !== "receiver"), ...definition.hand];
-        for (const kind of used) assert.ok(tested.has(kind), `seed ${seed}: ${kind}`);
+    for (const size of SIZES) {
+        const a = generateDefinition({size, rng: seeded(10)});
+        const b = generateDefinition({size, rng: seeded(11)});
+        assert.notDeepEqual([a.locked, a.solution], [b.locked, b.solution]);
     }
 });
 
-const reaches = (kind, x, y) => KINDS[kind].abilities.some(id => ABILITIES[id].target(x, y, {gridScale: DEFAULT_SIZE})
-    .some(t => t.x >= 0 && t.x < DEFAULT_SIZE && t.y >= 0 && t.y < DEFAULT_SIZE));
-
-for (const seed of [21, 22, 23, 24, 25, 26]) {
-    test(`random puzzle (seed ${seed}): 1-2 spares, nothing pointless, every piece reaches the board`, () => {
-        const definition = generateDefinition({rng: seeded(seed)});
-        const spares = definition.hand.length - definition.solution.length;
-        assert.ok(spares === 1 || spares === 2, `spares: ${spares}`);
-        // the solution's kinds all come from the hand
-        const hand = [...definition.hand];
-        for (const {kind} of definition.solution) {
-            const i = hand.indexOf(kind);
-            assert.ok(i >= 0, kind);
-            hand.splice(i, 1);
-        }
-        assert.equal(isSensible(definition), true);
-        const pieces = [
-            ...definition.locked.filter(([, , kind]) => kind !== "receiver").map(([x, y, kind]) => ({x, y, kind})),
-            ...definition.solution,
-        ];
-        for (const {x, y, kind} of pieces) assert.ok(reaches(kind, x, y), `${kind} at ${x},${y} points nowhere`);
-    });
-}
-
-test("the Row piece turns up in random puzzles", () => {
-    assert.ok(allowedKinds().reactors.includes("row"));
-    let seen = 0;
-    for (let seed = 200; seed < 260; seed++) {
-        const definition = generateDefinition({rng: seeded(seed)});
-        const placed = [...definition.locked.map(l => l[2]), ...definition.solution.map(s => s.kind)];
-        if (placed.includes("row")) seen++;
-    }
-    assert.ok(seen > 0, "no Row piece in 60 puzzles");
+test("an unsupported size throws", () => {
+    assert.throws(() => generateDefinition({size: 4}), /size/);
+    assert.throws(() => generateDefinition({size: 9}), /size/);
 });
+
+test("the default random source works", () => {
+    const definition = generateDefinition({size: 3});
+    assert.equal(isSensible(definition), true);
+});
+
+const reaches = (kind, x, y, size) => KINDS[kind].abilities.some(id => ABILITIES[id].target(x, y, {gridScale: size})
+    .some(t => t.x >= 0 && t.x < size && t.y >= 0 && t.y < size && !(t.x === x && t.y === y)));
 
 test("no silly locked pieces: each one reaches the board and activates something", () => {
-    for (let seed = 100; seed < 140; seed++) {
-        const definition = generateDefinition({rng: seeded(seed)});
-        const {trace} = simulate(cloneGrid(layout(definition), DEFAULT_SIZE), DEFAULT_SIZE);
-        for (const [x, y, kind] of definition.locked) {
-            if (kind === "receiver") continue;
-            assert.ok(reaches(kind, x, y), `seed ${seed}: locked ${kind} at ${x},${y} points off the board`);
-            const useful = trace.some(s => s.sourceX === x && s.sourceY === y && s.targets.some(t => t.consumed));
-            assert.ok(useful, `seed ${seed}: locked ${kind} at ${x},${y} activates nothing`);
+    for (const size of SIZES) {
+        for (let seed = 100; seed < 130; seed++) {
+            const definition = generateDefinition({size, rng: seeded(seed)});
+            const {trace} = simulate(cloneGrid(layout(definition), size), size);
+            for (const [x, y, kind] of definition.locked) {
+                if (kind === "receiver") continue;
+                assert.ok(reaches(kind, x, y, size), `${size}x${size} seed ${seed}: locked ${kind} at ${x},${y} points off the board`);
+                const useful = trace.some(s => s.sourceX === x && s.sourceY === y && s.targets.some(t => t.consumed));
+                assert.ok(useful, `${size}x${size} seed ${seed}: locked ${kind} at ${x},${y} activates nothing`);
+            }
         }
     }
+});
+
+test("beam pieces stay within the size's limit, and Row and Column pieces both turn up", () => {
+    const seen = new Set();
+    for (const size of SIZES) {
+        for (let seed = 200; seed < 260; seed++) {
+            const definition = generateDefinition({size, rng: seeded(seed)});
+            const kinds = [...definition.locked.map(l => l[2]), ...definition.solution.map(s => s.kind)];
+            const beams = kinds.filter(kind => KINDS[kind].abilities.some(id => ABILITIES[id].line));
+            assert.ok(beams.length <= SIZE_CONFIG[size].beams, `${size}x${size} seed ${seed}: ${beams.length} beams`);
+            for (const kind of kinds) seen.add(kind);
+        }
+    }
+    assert.ok(seen.has("row"), "no Row piece in 180 puzzles");
+    assert.ok(seen.has("column"), "no Column piece in 180 puzzles");
 });
