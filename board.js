@@ -1,13 +1,14 @@
 import {makeEmptyNode} from "./node.js";
 import {drawPieceShape, colorForNode, targetCells, pieceType, dotRing, bodyEdgeDistance, shadeBeamEnd, PALETTE} from "./pieces.js";
-import {isBeam} from "./abilities.js";
+import {beamAxis, isBeam} from "./abilities.js";
+import {tintCoverage, flatBackground, TINT_FILLS} from "./tints.js";
 import {wireLinks, drawnLinks, linkKey, skipHits, dotAngles, beamLevel, beamWidths} from "./wires.js";
 
 export class Board {
     static OUTLINE_STROKE = 5;
     static GRID_STROKE = 1;
     static BEAM_SHADOW = 0.22;       // darkness of the shadow where a beam meets a piece (either end)
-    static TINT_ALPHA = 0.16;        // opacity of the purple wash under a beam piece
+    static TINT_ALPHA = 0.16;        // opacity of the wash under a beam piece
     static TINT_HOVER_BOOST = 0.07;  // a little darker while that piece is hovered
     static DIM = 0.45; // opacity of pieces not involved in the hovered piece
 
@@ -155,11 +156,9 @@ export class Board {
         return String(gridScale - row);
     }
 
-    // A soft purple wash over every cell a placed beam piece (column / row
-    // sweep) covers, including the beam's own cell.
-    // One tint layer per placed beam piece (column / row sweep): the cells it
-    // covers, including its own, and how strong the purple wash is. A beam's
-    // wash gets slightly darker while its piece is hovered.
+    // One tint layer per placed beam piece (column / row): its axis, the cells
+    // it covers (including its own), and how strong its wash is. A beam's wash
+    // gets slightly darker while its piece is hovered.
     beamLayers() {
         const layers = [];
         for (let i = 0; i < this.gridScale; i++) {
@@ -168,6 +167,7 @@ export class Board {
                 if (node.isEmpty || !isBeam(node)) continue;
                 const hovered = this.hoverCell !== null && this.hoverCell.x === i && this.hoverCell.y === j;
                 layers.push({
+                    axis: beamAxis(node),
                     cells: [{x: i, y: j}, ...targetCells(node, i, j, this.gridScale)],
                     alpha: Board.TINT_ALPHA + (hovered ? Board.TINT_HOVER_BOOST : 0),
                 });
@@ -176,36 +176,49 @@ export class Board {
         return layers;
     }
 
-    // Combined wash strength in each cell: Map of "x,y" -> alpha (0-1).
+    // Combined wash strength in each cell: Map of "x,y" -> {column, row}.
     beamCoverage() {
-        const coverage = new Map();
-        for (const {cells, alpha} of this.beamLayers()) {
-            for (const {x, y} of cells) {
-                const key = `${x},${y}`;
-                coverage.set(key, 1 - (1 - (coverage.get(key) ?? 0)) * (1 - alpha));
-            }
-        }
-        return coverage;
+        return tintCoverage(this.beamLayers());
     }
 
-    // The board color in a cell: white, or white under the purple tint.
+    // The board color in a cell: white, or white under the beam wash(es).
     cellBackground(coverage, i, j) {
-        const alpha = coverage.get(`${i},${j}`) ?? 0;
-        if (alpha === 0) return "#ffffff";
-        const [r, g, b] = [0x7b, 0x5f, 0xc4].map(c => Math.round(255 - (255 - c) * alpha));
-        return `rgb(${r}, ${g}, ${b})`;
+        return flatBackground(coverage.get(`${i},${j}`));
     }
 
-    // A soft purple wash over every cell a placed beam piece covers.
+    // A soft wash over every cell a placed beam piece covers: violet for
+    // columns, blue for rows. Where a column and a row cross, the cell is split
+    // along its anti-diagonal: top-left triangle the column's color, bottom-right
+    // triangle the row's, meeting in the middle.
     drawBeamTints() {
         const ctx = this.ctx;
+        const size = this.gridSize;
         ctx.save();
-        ctx.fillStyle = PALETTE.beam.fill;
-        for (const {cells, alpha} of this.beamLayers()) {
-            ctx.globalAlpha = alpha;
-            for (const {x, y} of cells) {
-                const o = this.cellOrigin(x, y);
-                ctx.fillRect(o.x, o.y, this.gridSize, this.gridSize);
+        for (const [key, {column, row}] of this.beamCoverage()) {
+            const [x, y] = key.split(",").map(Number);
+            const o = this.cellOrigin(x, y);
+            if (column > 0 && row > 0) {
+                ctx.globalAlpha = column;
+                ctx.fillStyle = TINT_FILLS.column;
+                ctx.beginPath();
+                ctx.moveTo(o.x, o.y);
+                ctx.lineTo(o.x + size, o.y);
+                ctx.lineTo(o.x, o.y + size);
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = row;
+                ctx.fillStyle = TINT_FILLS.row;
+                ctx.beginPath();
+                ctx.moveTo(o.x + size, o.y);
+                ctx.lineTo(o.x + size, o.y + size);
+                ctx.lineTo(o.x, o.y + size);
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                const axis = column > 0 ? "column" : "row";
+                ctx.globalAlpha = Math.max(column, row);
+                ctx.fillStyle = TINT_FILLS[axis];
+                ctx.fillRect(o.x, o.y, size, size);
             }
         }
         ctx.restore();
