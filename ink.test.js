@@ -9,4 +9,5 @@ test("three wobble filters with different seeds are defined", () => {
     assert.equal(new Set(markup.match(/seed="\d+"/g)).size, 3);
     // roomy enough that the shadow is not clipped
     assert.ok(markup.includes('x="-20%"') && markup.includes('width="140%"'));
+    assert.ok(markup.includes('y="-40%"') && markup.includes('height="180%"'));
 });

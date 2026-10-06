@@ -176,7 +176,7 @@ const STEPS = [
             "A dot means another piece will activate it from afar.",
             "The dot's color is the piece that will activate it.",
             "The dots menu can show dots for every piece, or none.",
-            "Ready? Drag the pieces onto level 1 and press Run.",
+            "Ready? Drag the pieces onto the board and press Run.",
         ],
         draw(ctx) {
             // two short stretches of board column, three cells tall each

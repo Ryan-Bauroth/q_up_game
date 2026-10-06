@@ -13,7 +13,7 @@ const FRAMES = [
 // the hard shadow, which sticks out past the box, is not clipped.
 export function filterMarkup(frames = FRAMES) {
     const filters = frames.map(({id, seed}) =>
-        `<filter id="${id}" x="-20%" y="-20%" width="140%" height="140%">` +
+        `<filter id="${id}" x="-20%" y="-40%" width="140%" height="180%">` +
         `<feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="${seed}"/>` +
         `<feDisplacementMap in="SourceGraphic" scale="5.5"/></filter>`).join("");
     return `<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">${filters}</svg>`;

@@ -69,7 +69,7 @@ The size is carried on the definition (`definition.size`) and passed to `buildFr
 ## 6. Game page (`play.html`, `game.js`)
 - The board size, canvas size (3: 320px, 5: 400px, 7: 490px) and generator size come from the URL.
 - Page chrome, as in the mockup: a raised Home pill, a title ("Daily · 5×5 · Oct 7" or "Unlimited · 5×5"), a raised `?` pill; the board canvas inside a recessed bezel; the hand as raised white tiles overlapping the bezel's bottom edge; the side panel as raised boxes; a raised Run button.
-- **Daily:** today's definition from `dailyDefinition`. No New, Back, forward or Show Solution. On a win: record progress (unless the daily was already complete today) and show "Solved! Streak: N days" (or "Solved again!" on a replay) with a Home button.
+- **Daily:** today's definition from `dailyDefinition`. No New, Back, forward or Show Solution. On a win: record progress (unless the daily was already complete today) and show "Solved! Streak: N days" (or "Solved again!" on a replay); the Home pill in the top bar is always available (there is no separate Home button in the win message).
 - **Unlimited:** `generateDefinition({size})` with `Math.random`; keeps New, Back, forward and Show Solution and the existing history behavior.
 - The tutorial still opens on a player's first visit to the game page and from the `?` button.
 - The hand pieces still show 1 and still need no activations; the existing rules, runner, wiring and tint code are unchanged.

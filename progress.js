@@ -11,6 +11,8 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 export function recordWin(progress, size, today) {
     const entry = progress[size];
     if (entry?.last === today) return progress;
+    // a tab left open past midnight winning yesterday's puzzle must not reset today's streak
+    if (entry && today < entry.last) return progress;
     const streak = entry?.last === addDays(today, -1) ? entry.streak + 1 : 1;
     return {...progress, [size]: {last: today, streak}};
 }
@@ -21,6 +23,10 @@ export function streakFor(progress, size, today) {
     if (!entry) return 0;
     return entry.last === today || entry.last === addDays(today, -1) ? entry.streak : 0;
 }
+
+// What storage has wins; the in-memory copy only fills in what storage lacks
+// (another tab may have saved since this page loaded, or storage may be blocked).
+export const mergeProgress = (inMemory, stored) => ({...inMemory, ...stored});
 
 export const isDone = (progress, size, today) => progress[size]?.last === today;
 

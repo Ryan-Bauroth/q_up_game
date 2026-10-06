@@ -25,9 +25,7 @@ function streakTag(card) {
     const tag = element("div", "up tag streak");
     tag.setAttribute("role", "img");
     tag.setAttribute("aria-label", `streak: ${card.streakText}`);
-    if (card.streak === 0) {
-        tag.textContent = card.streakText;
-    } else if (card.streak > MAX_TALLY) {
+    if (card.streak === 0 || card.streak > MAX_TALLY) {
         tag.textContent = card.streakText;
     } else {
         const tally = element("span", "tally");
@@ -92,8 +90,10 @@ function buildCard(size) {
     const buttons = element("div", "btns");
     const play = element("a", "up btn fill", card.playLabel);
     play.href = card.dailyHref;
+    play.setAttribute("aria-label", `${card.playLabel} today's ${card.title}`);
     const unlimited = element("a", "up btn", "Unlimited");
     unlimited.href = card.unlimitedHref;
+    unlimited.setAttribute("aria-label", `Unlimited ${card.title}`);
     buttons.append(play, unlimited);
     article.appendChild(buttons);
 
@@ -115,5 +115,8 @@ function tick() {
 }
 tick();
 setInterval(tick, 30000);
+
+// a page restored from the back/forward cache has old progress and maybe yesterday's puzzles
+addEventListener("pageshow", event => { if (event.persisted) location.reload(); });
 
 startInk();

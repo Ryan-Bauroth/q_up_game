@@ -11,7 +11,7 @@ import {canDrag, applyDrop, validatePuzzle} from "./rules.js";
 import {parsePlayParams, playTitle, winMessage, CANVAS_SIZES} from "./play-model.js";
 import {easternDateString} from "./dates.js";
 import {dailyDefinition} from "./daily.js";
-import {loadProgress, saveProgress, recordWin, isDone, browserStorage} from "./progress.js";
+import {loadProgress, saveProgress, recordWin, isDone, mergeProgress, browserStorage} from "./progress.js";
 import {startInk} from "./ink.js";
 
 // Which board and which mode this page is for comes from the URL
@@ -266,6 +266,8 @@ let progress = loadProgress(browserStorage());
 // streak; winning it again (Keep going, or replaying a finished day) changes nothing.
 function winText() {
     if (!isDaily) return winMessage({daily: false});
+    // work from the latest saved data, in case another tab has saved since this page loaded
+    progress = mergeProgress(progress, loadProgress(browserStorage()));
     const firstWin = !isDone(progress, gridScale, today);
     if (firstWin) {
         progress = recordWin(progress, gridScale, today);
@@ -346,8 +348,6 @@ function restoreAfterRound() {
     board.drawBoard();
 }
 
-
-
 // Clear Board: back to the starting puzzle with every movable piece in hand.
 clearButton.addEventListener("click", () => {
     roundOver = false;
@@ -420,7 +420,6 @@ function updateNav() {
     backButton.disabled = history.length === 0;
     nextButton.hidden = future.length === 0;
 }
-
 
 // ---- Show Solution ----
 const solutionButton = document.getElementById("solution-button");
