@@ -138,7 +138,7 @@ const STEPS = [
     {
         heading: "Your hand",
         body: [
-            "Drag pieces onto the board. Hand pieces show 0: they never have to be activated. Padlocked ones are fixed.",
+            "Drag pieces onto the board. Hand pieces never have to be activated. Padlocked ones are fixed.",
             "Drop on another piece to swap, or drag off the board to take back.",
         ],
         draw(ctx) {

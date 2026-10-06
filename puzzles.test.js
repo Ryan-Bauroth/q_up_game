@@ -31,10 +31,11 @@ test("Echo: the 2-charge Burster fires twice, and the puzzle is won by one Pushe
     assert.equal(trace.filter(s => s.sourceX === 1 && s.sourceY === 1).length, 2);
 });
 
-test("hand pieces are not required to be activated; locked pieces and targets are", () => {
+test("hand pieces show 1 but are not required to be activated; locked pieces and targets are", () => {
     const {grid, pool} = buildPuzzle(0);
     assert.ok(pool.length > 0);
     assert.ok(pool.every(piece => piece.required === false));
+    assert.ok(pool.every(piece => piece.charges === 1));   // the number shown on a hand piece is always 1
     for (const column of grid) {
         for (const node of column) {
             if (!node.isEmpty) assert.equal(node.required, true);

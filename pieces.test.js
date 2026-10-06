@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {Node} from "./node.js";
-import {targetCount, colorForNode, PALETTE, tipAngles, targetCells, bodySides, bodyRotation, bodyKind, pieceType, skipDepth, shownCount, arrowShapes, bodyEdgeDistance, ARROW_PADDING} from "./pieces.js";
+import {targetCount, colorForNode, PALETTE, tipAngles, targetCells, bodySides, bodyRotation, bodyKind, pieceType, skipDepth, arrowShapes, bodyEdgeDistance, ARROW_PADDING} from "./pieces.js";
 import {KINDS} from "./puzzles.js";
 
 const piece = abilities => new Node({id: 1, charges: 1, abilities});
@@ -98,11 +98,6 @@ test("a start-on-run piece with two opposite outputs is a lens; one output stays
     assert.equal(bodySides(piece(["runPair"])), 0);
     assert.equal(bodyKind(piece(["runPulseDown"])), "polygon");
     assert.equal(bodySides(piece(["runPulseDown"])), 3);
-});
-
-test("the number a piece shows: its charges, or 0 if it isn't required", () => {
-    assert.equal(shownCount(new Node({id: 1, charges: 2, abilities: []})), 2);
-    assert.equal(shownCount(new Node({id: 1, charges: 1, abilities: [], required: false})), 0);
 });
 
 test("every arrow of every piece stays inside its body, with padding", () => {
