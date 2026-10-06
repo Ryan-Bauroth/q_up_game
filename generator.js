@@ -1,6 +1,7 @@
 import {cloneGrid, simulate} from "./engine.js";
 import {ABILITIES, TRIGGERS} from "./abilities.js";
-import {buildFromDefinition, makePiece, testedKinds, KINDS, PUZZLE_SIZE} from "./puzzles.js";
+import {buildFromDefinition, testedKinds, KINDS, PUZZLE_SIZE} from "./puzzles.js";
+import {isSensible} from "./lint.js";
 
 // Random puzzle generator. A puzzle is completable BY CONSTRUCTION: it first
 // lays out every piece (locked ones and the hand) at random cells, runs the
@@ -36,7 +37,14 @@ function emptyCellHits(grid, trace) {
     return hits;
 }
 
-export function generateDefinition({rng = Math.random, handSize = 4, minActivations = 12, maxAttempts = 80000} = {}) {
+// True if the piece, put at (x, y), would reach some other cell on the board.
+function reachesBoard(kind, x, y) {
+    const board = {gridScale: PUZZLE_SIZE};
+    return KINDS[kind].abilities.some(id => ABILITIES[id].target(x, y, board).some(t =>
+        t.x >= 0 && t.x < PUZZLE_SIZE && t.y >= 0 && t.y < PUZZLE_SIZE && !(t.x === x && t.y === y)));
+}
+
+export function generateDefinition({rng = Math.random, handSize = 5, minActivations = 12, maxAttempts = 80000} = {}) {
     const size = PUZZLE_SIZE;
     const {starters: STARTER_KINDS, reactors: REACTOR_KINDS} = allowedKinds();
     const pick = list => list[Math.floor(rng() * list.length)];
@@ -52,8 +60,13 @@ export function generateDefinition({rng = Math.random, handSize = 4, minActivati
         // ask for a little less if the first tries keep missing
         const wanted = Math.max(6, minActivations - Math.floor(attempt / 15000));
 
-        const hand = [pick(STARTER_KINDS)];
-        while (hand.length < handSize) hand.push(rng() < 0.12 ? pick(STARTER_KINDS) : pick(REACTOR_KINDS));
+        // 1-2 of the hand pieces are spares: the puzzle is solved without them.
+        const spares = 1 + Math.floor(rng() * 2);
+        const placed = [pick(STARTER_KINDS)];
+        while (placed.length < handSize - spares) placed.push(rng() < 0.12 ? pick(STARTER_KINDS) : pick(REACTOR_KINDS));
+        const spareKinds = [];
+        while (spareKinds.length < spares) spareKinds.push(rng() < 0.2 ? pick(STARTER_KINDS) : pick(REACTOR_KINDS));
+        const hand = shuffle([...placed, ...spareKinds]);
         const lockedKinds = [pick(STARTER_KINDS)];
         if (rng() < 0.7) lockedKinds.push(pick(REACTOR_KINDS));
         if (rng() < 0.3) lockedKinds.push(pick(REACTOR_KINDS));
@@ -61,8 +74,19 @@ export function generateDefinition({rng = Math.random, handSize = 4, minActivati
         const cells = [];
         for (let x = 0; x < size; x++) for (let y = 0; y < size; y++) cells.push({x, y});
         shuffle(cells);
-        const lockedPlaced = lockedKinds.map(kind => ({kind, ...cells.pop()}));
-        const handPlaced = hand.map(kind => ({kind, ...cells.pop()}));
+        // a piece only goes where it reaches at least one cell on the board
+        const place = kinds => {
+            const out = [];
+            for (const kind of kinds) {
+                const i = cells.findIndex(c => reachesBoard(kind, c.x, c.y));
+                if (i < 0) return null;
+                out.push({kind, ...cells.splice(i, 1)[0]});
+            }
+            return out;
+        };
+        const lockedPlaced = place(lockedKinds);
+        const handPlaced = lockedPlaced && place(placed);
+        if (!handPlaced) continue;
 
         // Lay everything out and run it.
         const probe = buildFromDefinition({
@@ -98,24 +122,9 @@ export function generateDefinition({rng = Math.random, handSize = 4, minActivati
             solution: handPlaced.map(p => ({x: p.x, y: p.y, kind: p.kind})),
         };
 
-        // Re-check against the real engine: the stored solution must win, and
-        // the puzzle must not already be solved before anything is placed.
-        if (!solvedBySolution(definition) || alreadySolved(definition)) continue;
+        // Re-check against the real engine and weed out pointless pieces.
+        if (!isSensible(definition)) continue;
         return definition;
     }
     throw new Error("could not generate a puzzle");
-}
-
-function solvedBySolution(definition) {
-    const {grid} = buildFromDefinition(definition);
-    for (const {x, y, kind} of definition.solution) {
-        if (!grid[x][y].isEmpty) return false;
-        grid[x][y] = makePiece(kind);
-    }
-    return simulate(cloneGrid(grid, PUZZLE_SIZE), PUZZLE_SIZE).won;
-}
-
-function alreadySolved(definition) {
-    const {grid} = buildFromDefinition(definition);
-    return simulate(cloneGrid(grid, PUZZLE_SIZE), PUZZLE_SIZE).won;
 }

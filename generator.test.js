@@ -5,6 +5,9 @@ import {testedKinds} from "./puzzles.js";
 import {buildFromDefinition, PUZZLE_SIZE} from "./puzzles.js";
 import {validatePuzzle} from "./rules.js";
 import {solve} from "./solver.js";
+import {isSensible} from "./lint.js";
+import {ABILITIES} from "./abilities.js";
+import {KINDS} from "./puzzles.js";
 
 // small seeded generator so failures are reproducible
 function seeded(seed) {
@@ -22,7 +25,7 @@ for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
         const definition = generateDefinition({rng: seeded(seed)});
         const {grid, pool} = buildFromDefinition(definition);
         assert.doesNotThrow(() => validatePuzzle(grid, pool));
-        assert.equal(pool.length, 4);
+        assert.equal(pool.length, 5);
         // the brute-force solver independently finds a solution
         assert.ok(solve(grid, pool, PUZZLE_SIZE, 1).length >= 1);
         // not already solved with an empty hand
@@ -43,8 +46,8 @@ test("different seeds give different puzzles", () => {
 });
 
 test("a bigger hand is supported", () => {
-    const definition = generateDefinition({rng: seeded(5), handSize: 5});
-    assert.equal(definition.hand.length, 5);
+    const definition = generateDefinition({rng: seeded(5), handSize: 6});
+    assert.equal(definition.hand.length, 6);
     const {grid, pool} = buildFromDefinition(definition);
     assert.ok(solve(grid, pool, PUZZLE_SIZE, 1).length >= 1);
 });
@@ -63,3 +66,27 @@ test("random puzzles only use pieces from the play-tested levels 1-6", () => {
         for (const kind of used) assert.ok(tested.has(kind), `seed ${seed}: ${kind}`);
     }
 });
+
+const reaches = (kind, x, y) => KINDS[kind].abilities.some(id => ABILITIES[id].target(x, y, {gridScale: PUZZLE_SIZE})
+    .some(t => t.x >= 0 && t.x < PUZZLE_SIZE && t.y >= 0 && t.y < PUZZLE_SIZE));
+
+for (const seed of [21, 22, 23, 24, 25, 26]) {
+    test(`random puzzle (seed ${seed}): 1-2 spares, nothing pointless, every piece reaches the board`, () => {
+        const definition = generateDefinition({rng: seeded(seed)});
+        const spares = definition.hand.length - definition.solution.length;
+        assert.ok(spares === 1 || spares === 2, `spares: ${spares}`);
+        // the solution's kinds all come from the hand
+        const hand = [...definition.hand];
+        for (const {kind} of definition.solution) {
+            const i = hand.indexOf(kind);
+            assert.ok(i >= 0, kind);
+            hand.splice(i, 1);
+        }
+        assert.equal(isSensible(definition), true);
+        const pieces = [
+            ...definition.locked.filter(([, , kind]) => kind !== "receiver").map(([x, y, kind]) => ({x, y, kind})),
+            ...definition.solution,
+        ];
+        for (const {x, y, kind} of pieces) assert.ok(reaches(kind, x, y), `${kind} at ${x},${y} points nowhere`);
+    });
+}
