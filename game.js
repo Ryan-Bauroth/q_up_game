@@ -5,7 +5,8 @@ import {playRun} from "./runner.js";
 import {renderSummary, clearSummary} from "./summary-panel.js";
 import {drawPieceShape, targetCells} from "./pieces.js";
 import {buildFromDefinition, puzzleDefinition, puzzleCount, puzzleName, PUZZLE_SIZE} from "./puzzles.js";
-import {generateDefinition} from "./generator.js";
+import {startBest, generateBest} from "./generator.js";
+import {createPuzzleCache} from "./puzzle-cache.js";
 import {solve} from "./solver.js";
 import {initTutorial} from "./tutorial.js";
 import {canDrag, applyDrop, validatePuzzle} from "./rules.js";
@@ -504,6 +505,14 @@ for (let i = 0; i < puzzleCount(); i++) {
     pickerButtons.push(button);
 }
 
+// Random boards are built ahead of time, a few at a time between frames, so the
+// button never waits. If none is ready yet, a smaller (quicker) pool is used.
+const puzzleCache = createPuzzleCache({
+    newRun: () => startBest({candidates: 60}),
+    quick: () => generateBest({candidates: 15}),
+});
+puzzleCache.fill();
+
 // Random: builds a brand-new puzzle that is guaranteed to be completable.
 const randomButton = document.createElement("button");
 randomButton.className = "puzzle-button random-button";
@@ -512,7 +521,7 @@ randomButton.setAttribute("aria-label", "New random puzzle");
 randomButton.innerHTML = DICE_ICON;
 randomButton.addEventListener("click", () => {
     if (clearButton.disabled) return; // the animation is playing
-    activateGame(generateDefinition(), null);
+    activateGame(puzzleCache.take(), null);
 });
 pickerEl.appendChild(randomButton);
 pickerButtons.push(randomButton);
@@ -570,7 +579,7 @@ nextButton.addEventListener("click", () => {
 newButton.innerHTML = `${DICE_ICON}New`;
 newButton.addEventListener("click", () => {
     if (clearButton.disabled) return;
-    activateGame(generateDefinition(), null);
+    activateGame(puzzleCache.take(), null);
 });
 updateNav();
 
