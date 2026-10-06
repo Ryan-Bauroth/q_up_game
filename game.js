@@ -513,7 +513,7 @@ const puzzleCache = createPuzzleCache({
 });
 puzzleCache.fill();
 
-// Random: builds a brand-new puzzle that is guaranteed to be completable.
+// Random: takes a pre-built puzzle from the cache (guaranteed completable).
 const randomButton = document.createElement("button");
 randomButton.className = "puzzle-button random-button";
 randomButton.title = "New random puzzle";

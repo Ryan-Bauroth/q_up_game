@@ -47,7 +47,7 @@ export function dotAngles(count, stepDegrees = 28) {
 export const linkKey = (from, to) => `${from.x},${from.y}>${to.x},${to.y}`;
 
 // Pure: the links that are actually drawn as wires. Skip (non-adjacent) hits
-// show as dots instead, and purple beam pieces draw no wires.
+// show as dots instead, and beam pieces draw no wires.
 export function drawnLinks(grid, gridScale) {
     return wireLinks(grid, gridScale).filter(l => !l.skip && !isBeam(grid[l.from.x][l.from.y]));
 }

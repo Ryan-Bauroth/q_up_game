@@ -1,5 +1,5 @@
 import {makeEmptyNode} from "./node.js";
-import {drawPieceShape, colorForNode, targetCells, pieceType, dotRing, bodyEdgeDistance, shadeBeamEnd, PALETTE} from "./pieces.js";
+import {drawPieceShape, colorForNode, targetCells, pieceType, dotRing, bodyEdgeDistance, shadeBeamEnd} from "./pieces.js";
 import {beamAxis, isBeam} from "./abilities.js";
 import {tintCoverage, flatBackground, TINT_FILLS} from "./tints.js";
 import {wireLinks, drawnLinks, linkKey, skipHits, dotAngles, beamLevel, beamWidths} from "./wires.js";
