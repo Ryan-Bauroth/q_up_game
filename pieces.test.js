@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {Node} from "./node.js";
-import {targetCount, colorForNode, PALETTE, tipAngles, targetCells, bodySides, bodyRotation, bodyKind, pieceType, skipDepth, shownCount} from "./pieces.js";
+import {targetCount, colorForNode, PALETTE, tipAngles, targetCells, bodySides, bodyRotation, bodyKind, pieceType, skipDepth, shownCount, arrowShapes, bodyEdgeDistance, ARROW_PADDING} from "./pieces.js";
+import {KINDS} from "./puzzles.js";
 
 const piece = abilities => new Node({id: 1, charges: 1, abilities});
 
@@ -102,4 +103,17 @@ test("a start-on-run piece with two opposite outputs is a lens; one output stays
 test("the number a piece shows: its charges, or 0 if it isn't required", () => {
     assert.equal(shownCount(new Node({id: 1, charges: 2, abilities: []})), 2);
     assert.equal(shownCount(new Node({id: 1, charges: 1, abilities: [], required: false})), 0);
+});
+
+test("every arrow of every piece stays inside its body, with padding", () => {
+    const size = 100;
+    for (const [kind, {abilities}] of Object.entries(KINDS)) {
+        const node = new Node({id: 1, charges: 1, abilities});
+        for (const shape of arrowShapes(node, size)) {
+            for (const [dx, dy] of shape) {
+                const room = bodyEdgeDistance(node, size, Math.atan2(dy, dx)) - size * ARROW_PADDING;
+                assert.ok(Math.hypot(dx, dy) <= room + 1e-6, `${kind}: arrow point (${dx.toFixed(1)}, ${dy.toFixed(1)}) pokes out`);
+            }
+        }
+    }
 });

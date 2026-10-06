@@ -137,14 +137,46 @@ function tracePolygon(ctx, points) {
     ctx.closePath();
 }
 
-// An arrow drawn INSIDE the body, pointing toward a cell the piece hits.
-function drawArrow(ctx, cx, cy, {angle}, reach, color, base = 0.55, tipAt = 0.85) {
+// Empty space kept between an arrow and the edge of its piece, as a fraction
+// of the piece's size.
+export const ARROW_PADDING = 0.06;
+
+// The three points of an arrow, as [dx, dy] offsets from the piece's center,
+// before any shrinking. `base` and `tipAt` are fractions of the body's reach.
+function arrowPoints(node, size, {angle}, base, tipAt) {
+    const reach = bodyReach(node, size);
     const ux = Math.cos(angle), uy = Math.sin(angle);
     const px = -uy, py = ux;
-    const pt = (d, w) => [cx + ux * d * reach + px * w * reach, cy + uy * d * reach + py * w * reach];
+    const pt = (d, w) => [(ux * d + px * w) * reach, (uy * d + py * w) * reach];
+    return [pt(tipAt, 0), pt(base, 0.16), pt(base, -0.16)];
+}
 
+// How far (0-1) arrow points must shrink toward the center to sit ARROW_PADDING
+// inside the body's edge. A flat edge is nearer than a corner, so an arrow
+// pointing at one would otherwise stick out.
+function fitScale(node, size, points) {
+    let scale = 1;
+    for (const [dx, dy] of points) {
+        const room = bodyEdgeDistance(node, size, Math.atan2(dy, dx)) - size * ARROW_PADDING;
+        scale = Math.min(scale, Math.max(0, room) / Math.hypot(dx, dy));
+    }
+    return scale;
+}
+
+// Every arrow a piece shows, one per direction it activates, as point lists.
+// All of a piece's arrows shrink by the same amount, so they stay the same size.
+export function arrowShapes(node, size) {
+    const base = arrowBaseFraction(node);
+    const tipAt = bodyKind(node) === "capsule" ? 0.9 : 0.92;   // beam arrows sit out at the capsule's ends
+    const shapes = tipAngles(node).map(tip => arrowPoints(node, size, tip, base, tipAt));
+    const scale = Math.min(1, ...shapes.map(points => fitScale(node, size, points)));
+    return shapes.map(points => points.map(([dx, dy]) => [dx * scale, dy * scale]));
+}
+
+// An arrow drawn INSIDE the body, pointing toward a cell the piece hits.
+function drawArrow(ctx, cx, cy, points, color) {
     ctx.fillStyle = color;
-    tracePolygon(ctx, [pt(tipAt, 0), pt(base, 0.16), pt(base, -0.16)]);
+    tracePolygon(ctx, points.map(([dx, dy]) => [cx + dx, cy + dy]));
     ctx.fill();
 }
 
@@ -396,10 +428,8 @@ export function drawPieceShape(ctx, node, cx, cy, size, dim = 1, backing = "#fff
         ctx.lineCap = "butt";
     }
 
-    // Beam arrows sit out at the capsule's ends, leaving room for hit dots.
-    const [arrowBase, arrowTip] = [arrowBaseFraction(node), kind === "capsule" ? 0.9 : 0.92];
-    for (const tip of tipAngles(node)) {
-        drawArrow(ctx, cx, cy, tip, reach, edge, arrowBase, arrowTip);
+    for (const points of arrowShapes(node, size)) {
+        drawArrow(ctx, cx, cy, points, edge);
     }
 
     ctx.fillStyle = "#ffffff";
