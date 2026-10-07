@@ -111,7 +111,7 @@ try {
             return {x, y, index};
         }).sort((a, b) => b.index - a.index);   // highest tile first, so earlier tiles keep their place
         for (const {x, y, index} of placements) {
-            const tile = JSON.parse(await evaluate(`JSON.stringify(document.querySelectorAll("#pool .pool-node")[${index}].getBoundingClientRect())`));
+            const tile = JSON.parse(await evaluate(`JSON.stringify(document.querySelector('#pool .pool-node[data-slot="${index}"]').getBoundingClientRect())`));
             const from = {x: tile.left + tile.width / 2, y: tile.top + tile.height / 2};
             const to = {
                 x: canvas.left + Board.OUTLINE_STROKE - 2 + (Board.GRID_STROKE + gridSize) * x + gridSize / 2,

@@ -1,20 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {cardModel, tallyGroups, MAX_TALLY} from "./home-model.js";
+import {cardModel, toRoman} from "./home-model.js";
 
-test("tally marks come in groups of five", () => {
-    assert.deepEqual(tallyGroups(0), []);
-    assert.deepEqual(tallyGroups(1), [1]);
-    assert.deepEqual(tallyGroups(4), [4]);
-    assert.deepEqual(tallyGroups(5), [5]);
-    assert.deepEqual(tallyGroups(6), [5, 1]);
-    assert.deepEqual(tallyGroups(12), [5, 5, 2]);
+test("toRoman writes whole numbers as Roman numerals", () => {
+    const expected = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI", 9: "IX", 10: "X", 14: "XIV", 19: "XIX", 40: "XL",
+        49: "XLIX", 90: "XC", 99: "XCIX", 400: "CD", 444: "CDXLIV", 900: "CM", 1994: "MCMXCIV", 2026: "MMXXVI", 3999: "MMMCMXCIX"};
+    for (const [number, numeral] of Object.entries(expected)) assert.equal(toRoman(Number(number)), numeral, number);
 });
 
-test("tally marks stop at a cap (the card then shows the number)", () => {
-    assert.equal(MAX_TALLY, 25);
-    assert.deepEqual(tallyGroups(25), [5, 5, 5, 5, 5]);
-    assert.deepEqual(tallyGroups(99), [5, 5, 5, 5, 5]);
+test("toRoman gives null for what has no numeral (zero, negatives, fractions, 4000 and up)", () => {
+    for (const value of [0, -1, 1.5, 4000, 12345, NaN, undefined, null, "6"]) assert.equal(toRoman(value), null, String(value));
 });
 
 test("a card for a mode that has not been played", () => {
@@ -25,7 +20,7 @@ test("a card for a mode that has not been played", () => {
         label: "the classic",
         done: false,
         streak: 0,
-        tally: [],
+        roman: null,
         solution: [],
         streakText: "no streak yet",
         playLabel: "Play",
@@ -34,13 +29,13 @@ test("a card for a mode that has not been played", () => {
     });
 });
 
-test("a card for a mode finished today shows Review, the streak and tally", () => {
+test("a card for a mode finished today shows Review and the streak as a Roman numeral", () => {
     const progress = {3: {last: "2026-10-07", streak: 6}};
     const card = cardModel({size: 3, progress, today: "2026-10-07"});
     assert.equal(card.done, true);
     assert.equal(card.playLabel, "Review");
     assert.equal(card.streak, 6);
-    assert.deepEqual(card.tally, [5, 1]);
+    assert.equal(card.roman, "VI");
     assert.equal(card.streakText, "6 days");
     assert.equal(card.label, "the mini");
 });

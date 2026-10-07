@@ -1,7 +1,7 @@
 import {easternDateString, msUntilNextEasternMidnight, formatCountdown} from "./dates.js";
 import {dailyDefinition} from "./daily.js";
 import {loadProgress, browserStorage} from "./progress.js";
-import {cardModel, MAX_TALLY} from "./home-model.js";
+import {cardModel} from "./home-model.js";
 import {buildFromDefinition, makePiece, KINDS} from "./puzzles.js";
 import {drawPieceShape} from "./pieces.js";
 import {SIZES} from "./generator.js";
@@ -19,22 +19,12 @@ function element(tag, className, text) {
     return el;
 }
 
-// The streak tag: tally marks (a slash through every fifth), or the number once there are too many.
+// The streak tag: the streak as a Roman numeral (the plain words if there is none yet).
 function streakTag(card) {
-    const tag = element("div", "up tag streak");
+    const tag = element("div", card.roman ? "up tag streak has-roman" : "up tag streak");
     tag.setAttribute("role", "img");
     tag.setAttribute("aria-label", `streak: ${card.streakText}`);
-    if (card.streak === 0 || card.streak > MAX_TALLY) {
-        tag.textContent = card.streakText;
-    } else {
-        const tally = element("span", "tally");
-        for (const count of card.tally) {
-            const group = element("span", count === 5 ? "group five" : "group");
-            for (let i = 0; i < count; i++) group.appendChild(document.createElement("i"));
-            tally.appendChild(group);
-        }
-        tag.appendChild(tally);
-    }
+    tag.textContent = card.roman ?? card.streakText;
     return tag;
 }
 
@@ -93,10 +83,10 @@ function buildCard(size, progress) {
     drawPreview(canvas, size, card.solution);
 
     const buttons = element("div", "btns");
-    const play = element("a", "up btn fill", card.playLabel);
+    const play = element("a", "up btn", card.playLabel);
     play.href = card.dailyHref;
     play.setAttribute("aria-label", `${card.playLabel} today's ${card.title}`);
-    const unlimited = element("a", "up btn", "Unlimited");
+    const unlimited = element("a", "up btn fill", "Unlimited");
     unlimited.href = card.unlimitedHref;
     unlimited.setAttribute("aria-label", `Unlimited ${card.title}`);
     buttons.append(play, unlimited);

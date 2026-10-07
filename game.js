@@ -46,11 +46,17 @@ let activeDefinition = isDaily ? dailyDefinition(today, gridScale) : generateDef
 document.getElementById("page-title").textContent = playTitle({size: gridScale, mode: params.mode, today});
 document.title = `qube · ${playTitle({size: gridScale, mode: params.mode, today})}`;
 
+// Each hand piece keeps its own slot in the hand, so pulling one out leaves an
+// empty place where it was, and a piece put back returns to that place.
+const slotOf = new Map();   // piece id -> its slot number
+const registerSlots = hand => hand.forEach((node, slot) => slotOf.set(node.id, slot));
+
 // Loads the current puzzle onto the board and returns its hand.
 function createPuzzle() {
     const puzzle = buildFromDefinition(activeDefinition);
     validatePuzzle(puzzle.grid, puzzle.pool);
     board.grid = puzzle.grid;
+    registerSlots(puzzle.pool);
     return puzzle.pool;
 }
 
@@ -87,12 +93,23 @@ function moveGhost(e) {
 
 function renderPool() {
     poolEl.innerHTML = "";
-    // the label only shows while there is something in the hand
-    handLabel.hidden = pool.length === 0;
-    pool.forEach((node, index) => {
+    const slots = activeDefinition.hand.length;
+    handLabel.hidden = slots === 0;
+    const held = new Map(pool.map((node, index) => [slotOf.get(node.id), {node, index}]));
+    for (let slot = 0; slot < slots; slot++) {
+        const entry = held.get(slot);
+        if (!entry) {
+            // the piece that belongs here is on the board: leave its place empty
+            const empty = document.createElement("div");
+            empty.className = "pool-slot";
+            poolEl.appendChild(empty);
+            continue;
+        }
+        const {node, index} = entry;
         const el = document.createElement("div");
         el.className = "pool-node up";
         el.dataset.index = String(index);
+        el.dataset.slot = String(slot);
 
         const pieceCanvas = document.createElement("canvas");
         pieceCanvas.width = POOL_PIECE_SIZE;
@@ -104,7 +121,7 @@ function renderPool() {
         el.addEventListener("mouseenter", () => renderSummary(node));
         el.addEventListener("mouseleave", () => renderSummary(null));
         poolEl.appendChild(el);
-    });
+    }
 }
 
 // Hit-tests the whole cell (not just the drawn piece) so hover and grab
@@ -168,7 +185,7 @@ function startDragFromPool(e, index) {
     board.dragY = e.clientY - canvas.getBoundingClientRect().top;
     // Dim the source piece instead of rebuilding the tray, so the hovered
     // element isn't destroyed mid-drag.
-    poolEl.children[index]?.classList.add("dragging");
+    poolEl.querySelector(`.pool-node[data-index="${index}"]`)?.classList.add("dragging");
     renderSummary(board.draggedObject);
     board.previewCells = [];
     board.hoverCell = null;
@@ -438,6 +455,7 @@ function findPlacements(definition) {
 solutionButton.addEventListener("click", () => {
     if (clearButton.disabled) return; // the animation is playing
     const fresh = buildFromDefinition(activeDefinition);
+    registerSlots(fresh.pool);
     const placed = new Set();
     board.grid = fresh.grid;
     for (const {x, y, poolIndex} of findPlacements(activeDefinition)) {

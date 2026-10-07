@@ -99,6 +99,14 @@ body.play .pool-node {
     --sy: 4px;
 }
 
+/* the place a piece left when it was pulled out of the hand */
+body.play .pool-slot {
+    width: 62px;
+    height: 62px;
+    border: 2.4px dashed rgba(37, 34, 29, 0.28);
+    border-radius: 14px 20px 13px 22px / 20px 13px 22px 14px;
+}
+
 /* ---------- side panel ---------- */
 
 body.play #summary-box {

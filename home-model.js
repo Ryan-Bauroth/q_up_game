@@ -5,16 +5,21 @@ import {playHref} from "./play-model.js";
 
 const LABELS = {3: "the mini", 5: "the classic", 7: "the big one"};
 
-// Past this many days the card shows the number instead of more tally marks.
-export const MAX_TALLY = 25;
+const NUMERALS = [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
 
-// A streak as tally marks: groups of 5 (the fifth is drawn as a slash), then
-// the leftover marks. 6 -> [5, 1].
-export function tallyGroups(streak) {
-    const shown = Math.min(streak, MAX_TALLY);
-    const groups = Array(Math.floor(shown / 5)).fill(5);
-    if (shown % 5 > 0) groups.push(shown % 5);
-    return groups;
+// A whole number as a Roman numeral: 6 -> "VI". Only 1 to 3999 have one; for
+// anything else this gives null and the card shows the plain number instead.
+export function toRoman(number) {
+    if (!Number.isInteger(number) || number < 1 || number > 3999) return null;
+    let rest = number;
+    let numeral = "";
+    for (const [value, letters] of NUMERALS) {
+        while (rest >= value) {
+            numeral += letters;
+            rest -= value;
+        }
+    }
+    return numeral;
 }
 
 export function cardModel({size, progress, today}) {
@@ -29,7 +34,7 @@ export function cardModel({size, progress, today}) {
         label: LABELS[size],
         done,
         streak,
-        tally: tallyGroups(streak),
+        roman: toRoman(streak),
         solution: done ? progress[size].solution ?? [] : [],   // the pieces the player placed today
         streakText,
         playLabel: done ? "Review" : "Play",
