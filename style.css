@@ -345,14 +345,6 @@ button[data-tip]:focus-visible::after {
     margin: 0;
 }
 
-#hand-label {
-    margin-top: 12px;
-    text-align: center;
-    font-size: 12px;
-    font-weight: bold;
-    color: #a3a3a3;
-}
-
 /* the ? sits at the end of the Run / Show Solution row, narrower than they are */
 #controls #help-button {
     flex: none;

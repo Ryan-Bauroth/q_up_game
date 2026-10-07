@@ -81,12 +81,17 @@ body.play #hand-controls {
     grid-column: 2;
 }
 
-body.play #hand-label {
+/* the hand, with the eraser beside it on narrow screens */
+body.play #hand-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
     margin-top: 18px;
-    font-size: 17px;
-    font-weight: normal;
-    color: var(--ink);
-    opacity: 0.6;
+}
+
+body.play #hand-row #hand-controls {
+    grid-column: auto;
 }
 
 /* ---------- the hand: raised tiles ---------- */
@@ -94,7 +99,7 @@ body.play #hand-label {
 body.play #pool {
     gap: 12px;
     min-height: 62px;
-    margin-top: 10px;
+    margin-top: 0;
 }
 
 body.play .pool-node {
@@ -192,6 +197,7 @@ body.play #result-banner.lose {
 /* ---------- smaller controls: inked, but still (no wobble) ---------- */
 
 body.play #nav-controls .nav-button,
+body.play #hand-row .nav-button,
 body.play #solution-button,
 body.play .speed-button {
     font-family: var(--font-body);
@@ -214,6 +220,7 @@ body.play .speed-button.selected {
 }
 
 body.play #nav-controls .nav-button:focus-visible,
+body.play #hand-row .nav-button:focus-visible,
 body.play #solution-button:focus-visible,
 body.play .speed-button:focus-visible {
     outline: 3px solid var(--coral);
@@ -228,9 +235,96 @@ body.play .speed-button:focus-visible {
         align-items: center;
     }
 
-    body.play #side-panel {
+    body.play #game-container {
+        gap: 16px;
+        padding: 16px 8px 40px;
+    }
+
+    /* the board shrinks to fit the screen (game.js maps taps back to board pixels) */
+    body.play #canvas-container {
         width: 100%;
-        max-width: 420px;
+        max-width: 100%;
+    }
+
+    body.play .screen {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    body.play .screen canvas#canvas {
+        max-width: 100%;
+        height: auto;
+        image-rendering: auto;   /* smooth when scaled down, not blocky */
+    }
+
+    /* the description (or the result that replaces it) goes above the board,
+       and the rest of the side panel stays below it */
+    body.play #side-panel {
+        display: contents;
+    }
+
+    body.play #summary-box,
+    body.play #result-banner,
+    body.play #controls,
+    body.play #ways-box {
+        width: min(calc(100% - 6px), 414px);
+        box-sizing: border-box;
+    }
+
+    body.play #view-controls {
+        width: min(100%, 420px);
+        justify-content: flex-end;
+    }
+
+    body.play #summary-box,
+    body.play #result-banner {
+        order: -1;
+        margin-bottom: 0;
+    }
+
+    /* a big hand (7x7) shrinks its tiles so the hand and the eraser fit on one row */
+    body.play #hand-row {
+        max-width: 100%;
+        gap: 8px;
+    }
+
+    body.play #pool {
+        flex: 0 1 auto;
+        min-width: 0;
+        gap: 8px;
+        align-items: center;   /* keep the shrunken tiles square, not stretched to the row's height */
+    }
+
+    body.play #pool .pool-node,
+    body.play #pool .pool-slot {
+        flex: 0 1 62px;
+        min-width: 0;
+        width: 62px;
+        height: auto;
+        aspect-ratio: 1;
+        box-sizing: border-box;
+        padding: 2px;
+    }
+
+    body.play #pool .pool-node canvas {
+        width: 100%;
+        height: 100%;
+    }
+
+    body.play #hand-row #hand-controls {
+        flex: none;
+    }
+
+    body.play #summary-panel {
+        height: 84px;
+        padding: 8px 12px;
+        font-size: 15px;
+    }
+
+    body.play #result-banner {
+        min-height: 84px;
+        padding: 8px 12px;
+        font-size: 18px;
     }
 }
 
@@ -475,5 +569,16 @@ body.play .tutorial-card .pill:disabled {
 
     body.play #tutorial-title {
         font-size: 30px;
+    }
+}
+
+@media (max-width: 420px) {
+    body.play .bar {
+        padding: 16px 12px 4px;
+        gap: 10px;
+    }
+
+    body.play .bar .title {
+        font-size: 28px;
     }
 }

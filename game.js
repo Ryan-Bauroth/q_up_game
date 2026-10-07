@@ -28,9 +28,22 @@ const today = easternDateString();
 
 const canvas = document.getElementById("canvas");
 const poolEl = document.getElementById("pool");
-const handLabel = document.getElementById("hand-label");
 const runButton = document.getElementById("run-button");
 const clearButton = document.getElementById("clear-button");
+
+// On narrow screens the eraser sits to the right of the hand; otherwise it stays
+// between Back and Next.
+const handControls = document.getElementById("hand-controls");
+const narrowScreen = window.matchMedia("(max-width: 860px)");
+function placeEraser() {
+    if (narrowScreen.matches) {
+        document.getElementById("hand-row").appendChild(handControls);
+    } else {
+        document.getElementById("nav-controls").insertBefore(handControls, document.getElementById("forward-controls"));
+    }
+}
+placeEraser();
+narrowScreen.addEventListener("change", placeEraser);
 const resultBanner = document.getElementById("result-banner");
 const resultText = document.getElementById("result-text");
 const runLabel = document.getElementById("run-label");
@@ -91,22 +104,34 @@ ghost.width = ghost.height = Math.ceil(board.gridSize);
 ghost.hidden = true;
 document.body.appendChild(ghost);
 
+// The board is drawn at a fixed size but may be shown smaller (narrow screens),
+// so pointer positions are converted to the canvas's own pixels, and the drag
+// ghost is shown at the size a cell is actually displayed.
+function canvasPoint(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX - rect.left) * canvas.width / rect.width,
+        y: (e.clientY - rect.top) * canvas.height / rect.height,
+    };
+}
+
 function showGhost(node, e) {
+    const shown = board.gridSize * canvas.getBoundingClientRect().width / canvas.width;
+    ghost.style.width = ghost.style.height = `${shown}px`;
     const ctx = ghost.getContext("2d");
     ctx.clearRect(0, 0, ghost.width, ghost.height);
     drawPieceShape(ctx, node, ghost.width / 2, ghost.height / 2, ghost.width * 0.92);
+    ghost.hidden = false;   // shown first: moveGhost centers it using its displayed size
     moveGhost(e);
-    ghost.hidden = false;
 }
 
 function moveGhost(e) {
-    ghost.style.transform = `translate(${e.clientX - ghost.width / 2}px, ${e.clientY - ghost.height / 2}px)`;
+    ghost.style.transform = `translate(${e.clientX - ghost.offsetWidth / 2}px, ${e.clientY - ghost.offsetHeight / 2}px)`;
 }
 
 function renderPool() {
     poolEl.innerHTML = "";
     const slots = activeDefinition.hand.length;
-    handLabel.hidden = slots === 0;
     const held = new Map(pool.map((node, index) => [slotOf.get(node.id), {node, index}]));
     for (let slot = 0; slot < slots; slot++) {
         const entry = held.get(slot);
@@ -211,8 +236,7 @@ function startDragFromPool(e, index) {
     board.dragSource = "pool";
     board.dragPoolIndex = index;
     board.draggedObject = pool[index];
-    board.dragX = e.clientX - canvas.getBoundingClientRect().left;
-    board.dragY = e.clientY - canvas.getBoundingClientRect().top;
+    ({x: board.dragX, y: board.dragY} = canvasPoint(e));
     // Dim the source piece instead of rebuilding the tray, so the hovered
     // element isn't destroyed mid-drag.
     poolEl.querySelector(`.pool-node[data-index="${index}"]`)?.classList.add("dragging");
@@ -225,9 +249,7 @@ function startDragFromPool(e, index) {
 
 canvas.addEventListener("pointerdown", e => {
     if (!board.interactive) return;
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const {x: mouseX, y: mouseY} = canvasPoint(e);
     const cell = checkMouseLocationForObject(mouseX, mouseY);
     if (cell != null && roundOver) retryFromFailure();
     if (cell == null && e.pointerType !== "mouse") {   // a tap on empty board deselects
@@ -252,14 +274,12 @@ canvas.addEventListener("pointerdown", e => {
 });
 
 function startDragFromBoard(e, cell) {
-    const rect = canvas.getBoundingClientRect();
     e.preventDefault();
     board.dragging = true;
     board.dragSource = "board";
     board.dragI = cell.x;
     board.dragJ = cell.y;
-    board.dragX = e.clientX - rect.left;
-    board.dragY = e.clientY - rect.top;
+    ({x: board.dragX, y: board.dragY} = canvasPoint(e));
     board.draggedObject = board.grid[cell.x][cell.y];
     board.previewCells = [];
     board.hoverCell = null;
@@ -281,9 +301,7 @@ document.addEventListener("pointercancel", e => {
 function finishDrag(e, cancelled) {
     if (!board.dragging) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const {x: mouseX, y: mouseY} = canvasPoint(e);
     const target = cancelled
         ? (board.dragSource === "board" ? {x: board.dragI, y: board.dragJ} : null)
         : cellFromPoint(mouseX, mouseY);
@@ -323,9 +341,7 @@ document.addEventListener("pointerdown", e => {
 });
 
 document.addEventListener("pointermove", e => {
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const {x: mouseX, y: mouseY} = canvasPoint(e);
 
     if (board.dragging) {
         board.dragX = mouseX;

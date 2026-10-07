@@ -3,7 +3,9 @@ import {loadDailyFile, getDaily} from "./daily-data.js";
 import {loadProgress, browserStorage} from "./progress.js";
 import {cardModel} from "./home-model.js";
 import {buildFromDefinition, makePiece, KINDS} from "./puzzles.js";
-import {drawPieceShape} from "./pieces.js";
+import {drawPieceShape, colorForNode, bodyEdgeDistance, shadeBeamEnd} from "./pieces.js";
+import {drawnLinks, beamLevel, beamWidths} from "./wires.js";
+import {CANVAS_SIZES} from "./play-model.js";
 import {SIZES} from "./generator.js";
 import {startInk} from "./ink.js";
 
@@ -50,6 +52,40 @@ function streakTag(card) {
     return tag;
 }
 
+// The lines between pieces that activate each other, as on the game board: each
+// runs from the edge of its source to the edge of its target, in the source's
+// color, under the pieces. Drawn at the board's proportions, scaled to this cell.
+function drawConnectors(ctx, grid, size, cell) {
+    const boardCell = (CANVAS_SIZES[size] - 5 - size) / size;   // the game board's own cell (outline 5, grid line 1)
+    const k = cell / boardCell;
+    const pieceSize = cell * 0.92;
+    const center = (x, y) => ({x: (x + 0.5) * cell, y: (y + 0.5) * cell});
+    ctx.save();
+    ctx.lineCap = "butt";
+    ctx.globalAlpha = 0.9;
+    for (const {from, to} of drawnLinks(grid, size)) {
+        const source = grid[from.x][from.y], target = grid[to.x][to.y];
+        const {outer, inner} = beamWidths(beamLevel(source));
+        const width = (outer + inner) / 2 * k;
+        const tuck = outer * 0.6 * k;
+        const a = center(from.x, from.y), b = center(to.x, to.y);
+        const angle = Math.atan2(b.y - a.y, b.x - a.x);
+        const out = bodyEdgeDistance(source, pieceSize, angle) - tuck;
+        const into = bodyEdgeDistance(target, pieceSize, angle + Math.PI) - tuck;
+        const start = {x: a.x + Math.cos(angle) * out, y: a.y + Math.sin(angle) * out};
+        const end = {x: b.x - Math.cos(angle) * into, y: b.y - Math.sin(angle) * into};
+        ctx.strokeStyle = colorForNode(source).fill;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        shadeBeamEnd(ctx, start, end, tuck, width, {alpha: 0.22});
+        shadeBeamEnd(ctx, end, start, tuck, width, {alpha: 0.22});
+    }
+    ctx.restore();
+}
+
 // A preview of today's puzzle, drawn with the game's own piece shapes: the pieces
 // and targets that start on the board, plus (once the day is won) the pieces the
 // player placed, which have no padlock. Before that the hand is not shown.
@@ -76,13 +112,15 @@ function drawPreview(canvas, size, solution) {
         ctx.lineTo(css, i * cell);
         ctx.stroke();
     }
-    ctx.fillStyle = "rgba(246, 196, 83, 0.4)";   // yellow wash under the player's own pieces
+    ctx.fillStyle = "#f5e8bd";   // under the player's own pieces: the same yellow as the Play button (.up.unsolved in paper.css)
     for (const {x, y, kind} of solution) {
         if (KINDS[kind]) ctx.fillRect(x * cell + 0.5, y * cell + 0.5, cell - 1, cell - 1);
     }
+    drawConnectors(ctx, grid, size, cell);
     for (let x = 0; x < size; x++) {
         for (let y = 0; y < size; y++) {
             const node = grid[x][y];
+            if (!node.isEmpty) node.locked = false;   // the preview is a picture: no padlocks
             if (!node.isEmpty) drawPieceShape(ctx, node, (x + 0.5) * cell, (y + 0.5) * cell, cell * 0.92);
         }
     }
@@ -109,7 +147,7 @@ function buildCard(size, progress) {
     drawPreview(canvas, size, card.solution);
 
     const buttons = element("div", "btns");
-    const play = element("a", "up btn", card.playLabel);
+    const play = element("a", card.done ? "up btn" : "up btn unsolved", card.playLabel);
     play.href = card.dailyHref;
     play.setAttribute("aria-label", `${card.playLabel} today's ${card.title}`);
     const unlimited = element("a", "up btn fill", "Unlimited");

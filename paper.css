@@ -104,6 +104,12 @@ body.paper a {
     color: var(--white);
 }
 
+/* Play, while the day is still to be won: a pale tint of the starter-piece yellow, so it is the button the eye
+   goes to. Once won, the button (now Review) goes back to plain white. */
+.up.unsolved {
+    --face: #f5e8bd;
+}
+
 .up.flat {
     --sx: 0px;
     --sy: 0px;
