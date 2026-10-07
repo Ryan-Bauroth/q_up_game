@@ -44,7 +44,7 @@ const board = new Board(canvas, boardSize, gridScale);
 let activeDefinition = isDaily ? dailyDefinition(today, gridScale) : generateDefinition({size: gridScale});
 
 document.getElementById("page-title").textContent = playTitle({size: gridScale, mode: params.mode, today});
-document.title = `Q-Up · ${playTitle({size: gridScale, mode: params.mode, today})}`;
+document.title = `qube · ${playTitle({size: gridScale, mode: params.mode, today})}`;
 
 // Loads the current puzzle onto the board and returns its hand.
 function createPuzzle() {
