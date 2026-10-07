@@ -262,3 +262,222 @@ body.play .way.found {
     opacity: 1;
 }
 
+
+/* ---------- the tutorial card: seven little lessons ---------- */
+
+body.play .tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    padding: 16px;
+    overflow-y: auto;            /* a short viewport scrolls the card, shadow and all */
+    background: rgba(37, 34, 29, 0.45);
+}
+
+body.play .tutorial-card {
+    margin: auto;                /* centered, but never cut off at the top when it scrolls */
+    width: 100%;
+    max-width: 400px;
+    padding: 16px 22px 12px;
+    --face: var(--paper);
+    --sx: 6px;
+    --sy: 7px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+body.play .tutorial-head {
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+body.play #tutorial-title {
+    flex: 1;
+    margin: 0;
+    font: 400 34px/1.05 var(--font-head);
+    text-align: left;
+}
+
+body.play .tutorial-close {
+    flex: none;
+    padding: 0 11px 2px;
+    font-size: 26px;
+    line-height: 1.1;
+    --sx: 2px;
+    --sy: 3px;
+}
+
+/* the one line that teaches: the hint, the help, a miss or the win */
+body.play #tutorial-hint {
+    align-self: stretch;
+    margin: 8px 0 12px;
+    min-height: 3.9em;           /* three lines, so the board does not jump as the text changes */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    line-height: 1.3;
+}
+
+body.play #tutorial-hint[data-tone="miss"] {
+    color: var(--coral);
+}
+
+body.play #tutorial-hint[data-tone="win"] {
+    color: var(--green);
+}
+
+body.play .tutorial-screen {
+    width: 100%;
+    max-width: 256px;
+    padding: 7px;
+}
+
+body.play .tutorial-screen canvas {
+    width: 100%;
+    height: auto;
+    touch-action: none;
+    -webkit-user-drag: none;
+}
+
+body.play #tutorial-hand {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    min-height: 56px;
+    margin-top: 14px;
+}
+
+body.play #tutorial-hand .pool-node,
+body.play #tutorial-hand .pool-slot {
+    width: 56px;
+    height: 56px;
+}
+
+body.play #tutorial-hand .pool-node {
+    touch-action: none;
+}
+
+body.play .tutorial-hand-empty {
+    font-size: 17px;
+    opacity: 0.55;
+}
+
+body.play .tutorial-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+body.play .tutorial-actions .pill {
+    min-width: 96px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+body.play .tutorial-actions .btn {
+    min-width: 116px;
+}
+
+body.play .tutorial-footer {
+    align-self: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 10px;
+    margin-top: 22px;
+}
+
+body.play #tutorial-dots {
+    display: flex;
+    gap: 7px;
+}
+
+body.play .tutorial-dot {
+    width: 11px;
+    height: 11px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    opacity: 0.45;
+}
+
+body.play .tutorial-dot.current {
+    opacity: 1;
+    background: var(--ink);
+}
+
+body.play .tutorial-dot.won {
+    opacity: 1;
+    background: var(--green);
+    border-color: var(--green);
+}
+
+body.play .tutorial-dot.won.current {
+    border-color: var(--ink);
+}
+
+body.play .tutorial-buttons {
+    display: flex;
+    gap: 12px;
+    margin-left: auto;
+}
+
+body.play .tutorial-buttons .pill {
+    font-size: 18px;
+    padding: 4px 14px 5px;
+}
+
+body.play .tutorial-card .pill:disabled {
+    cursor: default;
+    opacity: 0.4;
+}
+
+body.play .tutorial-skip {
+    margin-top: 12px;
+    padding: 4px 8px;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 16px;
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    opacity: 0.65;
+    cursor: pointer;
+}
+
+body.play .tutorial-skip:hover {
+    opacity: 1;
+}
+
+body.play .tutorial-skip:focus-visible {
+    outline: 3px solid var(--coral);
+    outline-offset: 2px;
+}
+
+#tutorial-ghost {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 30;
+    pointer-events: none;
+    filter: drop-shadow(0 9px 8px rgba(0, 0, 0, 0.3)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+}
+
+@media (max-width: 420px) {
+    body.play .tutorial-card {
+        padding: 14px 16px 10px;
+    }
+
+    body.play #tutorial-title {
+        font-size: 30px;
+    }
+}

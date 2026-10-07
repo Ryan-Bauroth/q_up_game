@@ -68,21 +68,26 @@
 </div>
 
 <div id="tutorial" class="tutorial-overlay" hidden>
-    <div class="tutorial-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
-        <button id="tutorial-close" class="tutorial-close" aria-label="Close">&times;</button>
-        <div class="tutorial-content">
-            <canvas id="tutorial-canvas" aria-hidden="true"></canvas>
+    <div class="tutorial-card up" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+        <div class="tutorial-head">
             <h2 id="tutorial-title"></h2>
-            <div id="tutorial-legend" hidden></div>
-            <div id="tutorial-body"></div>
+            <button id="tutorial-close" class="up pill tutorial-close" aria-label="Close"><span>&times;</span></button>
+        </div>
+        <p id="tutorial-hint" aria-live="polite"><span></span></p>
+        <div class="screen tutorial-screen"><canvas id="tutorial-canvas" width="320" height="320" aria-label="Tutorial board"></canvas></div>
+        <div id="tutorial-hand" aria-label="Your hand"></div>
+        <div class="tutorial-actions">
+            <button id="tutorial-hint-button" class="up pill"><span>Hint</span></button>
+            <button id="tutorial-run" class="up btn fill"><span>Run</span></button>
         </div>
         <div class="tutorial-footer">
             <div id="tutorial-dots" aria-hidden="true"></div>
             <div class="tutorial-buttons">
-                <button id="tutorial-back" class="nav-button">Back</button>
-                <button id="tutorial-next" class="nav-button primary">Next</button>
+                <button id="tutorial-back" class="up pill"><span>Back</span></button>
+                <button id="tutorial-next" class="up pill"><span id="tutorial-next-label">Next</span></button>
             </div>
         </div>
+        <button id="tutorial-skip" class="tutorial-skip">Skip tutorial</button>
     </div>
 </div>
 <script type="module" src="game.js"></script>
