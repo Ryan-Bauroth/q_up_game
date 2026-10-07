@@ -294,7 +294,7 @@ function showWays(ways) {
     waysBox.hidden = !ways;
     if (!ways) return;
     const label = document.createElement("span");
-    label.textContent = "Solutions";
+    label.textContent = "Solutions:";
     const bubbles = ways.items.map(item => {
         const bubble = document.createElement("span");
         bubble.className = "way" + (item.found ? " found" : "");

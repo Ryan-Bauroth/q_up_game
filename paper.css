@@ -274,6 +274,74 @@ body.home .cards {
     letter-spacing: 1px;
 }
 
+/* a streak sits on a bed of flames: ink-outlined tongues that flicker in steps */
+.tag.streak .flames {
+    position: absolute;
+    inset: 3px;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: 12px 17px 11px 18px / 16px 11px 18px 12px;
+    pointer-events: none;
+}
+
+.tag.streak .flames svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.tag.streak.has-roman {
+    min-width: 70px;
+    min-height: 42px;
+    justify-content: center;
+}
+
+/* the numeral sits above the flames, with a light edge so it stays readable */
+.tag.streak .num {
+    position: relative;
+    z-index: 1;
+    -webkit-text-stroke: 4px var(--white);
+    paint-order: stroke fill;
+    text-shadow: 0 0 5px var(--white), 0 0 3px var(--white);
+}
+
+.flame {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: flicker 0.84s steps(1) infinite;
+}
+
+.flame.f2 { animation-delay: -0.28s; }
+.flame.f3 { animation-delay: -0.56s; }
+.flame.f4 { animation-delay: -0.14s; }
+
+.flame .outer {
+    fill: var(--coral);
+    stroke: var(--ink);
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.flame .core {
+    fill: #f6c453;
+}
+
+.flame.f2 .outer, .flame.f4 .outer {
+    fill: #ec8a3b;
+}
+
+@keyframes flicker {
+    0% { transform: scale(1, 1) skewX(0deg); }
+    33.4% { transform: scale(0.94, 0.82) skewX(-5deg); }
+    66.8% { transform: scale(1.04, 1.1) skewX(4deg); }
+    100% { transform: scale(1, 1) skewX(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flame { animation: none; }
+}
+
 .card .btns {
     display: flex;
     gap: 12px;
