@@ -25,8 +25,34 @@ export function playTitle({size, mode, today}) {
     return mode === "daily" ? `Daily · ${board} · ${formatDay(today)}` : `Unlimited · ${board}`;
 }
 
-export function winMessage({daily, firstWin, streak}) {
+const piecesText = count => `${count} ${count === 1 ? "piece" : "pieces"}`;
+
+// What the banner says after a win, one line per "\n". A daily win also says how
+// many pieces the player needed and, if the puzzle has cheaper ways, nudges
+// toward them without saying how many pieces they use.
+export function winMessage({daily, firstWin, streak, pieces, newWay = false, cheaperLeft = 0, allFound = false}) {
     if (!daily) return "Solved!";
-    if (!firstWin) return "Solved again!";
-    return `Solved! Streak: ${streak} ${streak === 1 ? "day" : "days"}`;
+    const lines = [];
+    if (firstWin) lines.push(`Solved! Streak: ${streak} ${streak === 1 ? "day" : "days"}`);
+    else lines.push(newWay ? "A new way to solve it!" : "Solved again!");
+    if (pieces) lines.push(`Used ${piecesText(pieces)}.`);
+    if (allFound) lines.push("You found every way!");
+    else if (cheaperLeft > 0) lines.push(`${cheaperLeft === 1 ? "A cheaper way exists" : "Cheaper ways exist"}: try for fewer pieces.`);
+    return lines.join("\n");
+}
+
+// The puzzle's known ways to solve it (largest first) against the piece counts the
+// player has found. Ways not yet found show only "?", so their sizes stay a secret.
+export function waysSummary(solutions, foundCounts) {
+    const counts = solutions.map(solution => solution.length).sort((a, b) => b - a);
+    const isFound = count => foundCounts.includes(count);
+    // "cheaper" means fewer pieces than the cheapest way found so far; with none found there is no yardstick
+    const fewestFound = foundCounts.length > 0 ? Math.min(...foundCounts) : 0;
+    return {
+        total: counts.length,
+        found: counts.filter(isFound).length,
+        cheaperLeft: counts.filter(count => count < fewestFound).length,
+        allFound: counts.length > 0 && counts.every(isFound),
+        items: counts.map(count => ({found: isFound(count), label: isFound(count) ? piecesText(count) : "?"})),
+    };
 }
