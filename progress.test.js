@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {recordWin, streakFor, isDone, loadProgress, saveProgress, browserStorage, mergeProgress} from "./progress.js";
+import {recordWin, addSolution, cheapestSolution, foundCounts, streakFor, isDone, loadProgress, saveProgress, browserStorage, mergeProgress} from "./progress.js";
 
 test("a first win makes a streak of 1 and marks the day done", () => {
     const progress = recordWin({}, 5, "2026-10-07");
@@ -123,43 +123,90 @@ test("two tabs: a win in one tab keeps the other tab's saved win", () => {
     });
 });
 
-test("a win can save the pieces the player placed", () => {
+test("a win saves the pieces the player placed, under how many pieces that is", () => {
     const solution = [{x: 1, y: 2, kind: "burster"}, {x: 0, y: 0, kind: "pusher"}];
     const progress = recordWin({}, 5, "2026-10-07", solution);
-    assert.deepEqual(progress[5], {last: "2026-10-07", streak: 1, solution});
+    assert.deepEqual(progress[5], {last: "2026-10-07", streak: 1, solutions: {2: solution}});
 });
 
 test("winning the same day again keeps the first solution", () => {
     const first = [{x: 1, y: 2, kind: "burster"}];
     const once = recordWin({}, 5, "2026-10-07", first);
     const again = recordWin(once, 5, "2026-10-07", [{x: 3, y: 3, kind: "octo"}]);
-    assert.deepEqual(again[5].solution, first);
+    assert.deepEqual(again[5].solutions, {1: first});
 });
 
-test("the next day's win replaces the solution", () => {
+test("the next day's win starts a fresh set of solutions", () => {
     let progress = recordWin({}, 5, "2026-10-07", [{x: 1, y: 2, kind: "burster"}]);
     progress = recordWin(progress, 5, "2026-10-08", [{x: 0, y: 1, kind: "tee"}]);
-    assert.deepEqual(progress[5], {last: "2026-10-08", streak: 2, solution: [{x: 0, y: 1, kind: "tee"}]});
+    assert.deepEqual(progress[5], {last: "2026-10-08", streak: 2, solutions: {1: [{x: 0, y: 1, kind: "tee"}]}});
 });
 
-test("a saved solution survives saving and loading", () => {
+const three = [{x: 0, y: 0, kind: "pusher"}, {x: 1, y: 2, kind: "burster"}, {x: 2, y: 2, kind: "octo"}];
+const two = [{x: 1, y: 2, kind: "burster"}, {x: 2, y: 2, kind: "octo"}];
+
+test("addSolution keeps every different way found today, one per piece count", () => {
+    let progress = recordWin({}, 5, "2026-10-07", three);
+    progress = addSolution(progress, 5, "2026-10-07", two);
+    assert.deepEqual(progress[5].solutions, {3: three, 2: two});
+    assert.equal(progress[5].streak, 1);   // finding another way never touches the streak
+    // a second way with the same count is not kept, and nothing is mutated
+    const same = addSolution(progress, 5, "2026-10-07", [{x: 4, y: 4, kind: "tee"}, {x: 3, y: 3, kind: "cross"}]);
+    assert.deepEqual(same[5].solutions, {3: three, 2: two});
+});
+
+test("addSolution only adds to a day that has been won, and ignores an empty solution", () => {
+    assert.deepEqual(addSolution({}, 5, "2026-10-07", two), {});
+    const won = recordWin({}, 5, "2026-10-07", three);
+    assert.equal(addSolution(won, 5, "2026-10-08", two), won);
+    assert.equal(addSolution(won, 5, "2026-10-07", []), won);
+});
+
+test("cheapestSolution and foundCounts read today's solutions", () => {
+    let progress = recordWin({}, 5, "2026-10-07", three);
+    assert.deepEqual(cheapestSolution(progress, 5, "2026-10-07"), three);
+    assert.deepEqual(foundCounts(progress, 5, "2026-10-07"), [3]);
+    progress = addSolution(progress, 5, "2026-10-07", two);
+    assert.deepEqual(cheapestSolution(progress, 5, "2026-10-07"), two);
+    assert.deepEqual(foundCounts(progress, 5, "2026-10-07"), [2, 3]);
+    // yesterday's solutions are not today's; nothing saved reads as empty
+    assert.deepEqual(cheapestSolution(progress, 5, "2026-10-08"), []);
+    assert.deepEqual(foundCounts(progress, 5, "2026-10-08"), []);
+    assert.deepEqual(cheapestSolution({}, 5, "2026-10-07"), []);
+    assert.deepEqual(cheapestSolution(recordWin({}, 5, "2026-10-07"), 5, "2026-10-07"), []);
+});
+
+test("saved solutions survive saving and loading", () => {
     const storage = fakeStorage();
-    const solution = [{x: 4, y: 0, kind: "leap"}];
-    saveProgress(storage, recordWin({}, 5, "2026-10-07", solution));
-    assert.deepEqual(loadProgress(storage)[5].solution, solution);
+    let progress = recordWin({}, 5, "2026-10-07", three);
+    progress = addSolution(progress, 5, "2026-10-07", two);
+    saveProgress(storage, progress);
+    assert.deepEqual(loadProgress(storage), progress);
 });
 
-test("a damaged saved solution is dropped but the streak is kept", () => {
+test("an older save with a single `solution` is read as one found solution", () => {
+    const old = {"5": {last: "2026-10-07", streak: 2, solution: three}};
+    const loaded = loadProgress(fakeStorage({"qup-progress-v1": JSON.stringify(old)}));
+    assert.deepEqual(loaded, {5: {last: "2026-10-07", streak: 2, solutions: {3: three}}});
+});
+
+test("damaged saved solutions are dropped but the streak is kept", () => {
     const bad = [
-        [{x: 5, y: 0, kind: "leap"}],                 // off a 5x5 board
-        [{x: 1, y: 1}],                                // no kind
-        [{x: 1.5, y: 1, kind: "leap"}],                // not a whole cell
+        {3: [{x: 5, y: 0, kind: "leap"}]},                       // off a 5x5 board
+        {1: [{x: 1, y: 1}]},                                      // no kind
+        {1: [{x: 1.5, y: 1, kind: "leap"}]},                      // not a whole cell
+        {4: three},                                               // filed under the wrong piece count
         "oops",
-        [null],
+        [three],
+        {1: null},
     ];
-    for (const solution of bad) {
-        const saved = {"5": {last: "2026-10-07", streak: 3, solution}};
+    for (const solutions of bad) {
+        const saved = {"5": {last: "2026-10-07", streak: 3, solutions}};
         const loaded = loadProgress(fakeStorage({"qup-progress-v1": JSON.stringify(saved)}));
-        assert.deepEqual(loaded, {5: {last: "2026-10-07", streak: 3}}, JSON.stringify(solution));
+        assert.deepEqual(loaded, {5: {last: "2026-10-07", streak: 3}}, JSON.stringify(solutions));
     }
+    // one good and one bad entry: the good one is kept
+    const mixed = {"5": {last: "2026-10-07", streak: 3, solutions: {2: two, 4: three}}};
+    const loaded = loadProgress(fakeStorage({"qup-progress-v1": JSON.stringify(mixed)}));
+    assert.deepEqual(loaded, {5: {last: "2026-10-07", streak: 3, solutions: {2: two}}});
 });

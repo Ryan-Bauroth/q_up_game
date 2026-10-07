@@ -22,6 +22,7 @@ test("a card for a mode that has not been played", () => {
         streak: 0,
         roman: null,
         solution: [],
+        pieces: null,
         streakText: "no streak yet",
         playLabel: "Play",
         dailyHref: "play.html?size=5&mode=daily",
@@ -61,14 +62,19 @@ test("one day reads as '1 day'", () => {
     assert.equal(card.streakText, "1 day");
 });
 
-test("a finished card carries the player's own solution; an unfinished one carries none", () => {
-    const solution = [{x: 0, y: 1, kind: "burster"}];
-    const done = cardModel({size: 3, progress: {3: {last: "2026-10-07", streak: 2, solution}}, today: "2026-10-07"});
-    assert.deepEqual(done.solution, solution);
-    // yesterday's solution is not today's
-    const old = cardModel({size: 3, progress: {3: {last: "2026-10-06", streak: 2, solution}}, today: "2026-10-07"});
+test("a finished card carries the player's cheapest solution and how many pieces it uses", () => {
+    const four = [{x: 0, y: 1, kind: "burster"}, {x: 1, y: 1, kind: "octo"}, {x: 2, y: 1, kind: "tee"}, {x: 0, y: 2, kind: "cross"}];
+    const two = [{x: 0, y: 1, kind: "burster"}, {x: 1, y: 1, kind: "octo"}];
+    const progress = {3: {last: "2026-10-07", streak: 2, solutions: {4: four, 2: two}}};
+    const done = cardModel({size: 3, progress, today: "2026-10-07"});
+    assert.deepEqual(done.solution, two);
+    assert.equal(done.pieces, 2);
+    // yesterday's solutions are not today's
+    const old = cardModel({size: 3, progress, today: "2026-10-08"});
     assert.deepEqual(old.solution, []);
+    assert.equal(old.pieces, null);
     // finished before solutions were saved
     const bare = cardModel({size: 3, progress: {3: {last: "2026-10-07", streak: 2}}, today: "2026-10-07"});
     assert.deepEqual(bare.solution, []);
+    assert.equal(bare.pieces, null);
 });

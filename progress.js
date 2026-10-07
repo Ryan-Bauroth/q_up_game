@@ -8,21 +8,59 @@ const KEY = "qup-progress-v1";
 const SIZES = [3, 5, 7];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-// `solution` is the pieces the player placed, [{x, y, kind}], kept so the home
-// page can show it. The first win of a day keeps its solution.
+// `solution` is the pieces the player needed to win, [{x, y, kind}]. Solutions are
+// kept by how many pieces they use, so each different way found is remembered:
+//   {last, streak, solutions: {"5": [...], "3": [...]}}
+// The first win of a day sets the streak; finding more ways later never touches it.
 export function recordWin(progress, size, today, solution = []) {
     const entry = progress[size];
     if (entry?.last === today) return progress;
     // a tab left open past midnight winning yesterday's puzzle must not reset today's streak
     if (entry && today < entry.last) return progress;
     const streak = entry?.last === addDays(today, -1) ? entry.streak + 1 : 1;
-    return {...progress, [size]: {last: today, streak, ...(solution.length > 0 && {solution})}};
+    return {...progress, [size]: {last: today, streak, ...(solution.length > 0 && {solutions: {[solution.length]: solution}})}};
+}
+
+// Remembers one more way of solving today's puzzle (the first found with that many pieces).
+export function addSolution(progress, size, today, solution) {
+    const entry = progress[size];
+    if (entry?.last !== today || solution.length === 0 || entry.solutions?.[solution.length]) return progress;
+    return {...progress, [size]: {...entry, solutions: {...entry.solutions, [solution.length]: solution}}};
+}
+
+// How many pieces each of today's found solutions uses, fewest first.
+export function foundCounts(progress, size, today) {
+    const entry = progress[size];
+    if (entry?.last !== today || !entry.solutions) return [];
+    return Object.keys(entry.solutions).map(Number).sort((a, b) => a - b);
+}
+
+// The solution found today that uses the fewest pieces, or [] if none.
+export function cheapestSolution(progress, size, today) {
+    const [fewest] = foundCounts(progress, size, today);
+    return fewest === undefined ? [] : progress[size].solutions[fewest];
 }
 
 // A saved solution is only kept if every piece is a whole cell on this size's board.
 const validSolution = (solution, size) => Array.isArray(solution) && solution.length > 0 && solution.every(piece =>
     piece && Number.isInteger(piece.x) && Number.isInteger(piece.y) &&
     piece.x >= 0 && piece.x < size && piece.y >= 0 && piece.y < size && typeof piece.kind === "string");
+
+// Reads saved solutions, dropping any that are damaged or filed under the wrong
+// piece count. An older save had one `solution`; it becomes one found solution.
+function readSolutions(entry, size) {
+    const found = {};
+    const candidates = entry.solutions && typeof entry.solutions === "object" && !Array.isArray(entry.solutions)
+        ? Object.entries(entry.solutions)
+        : [];
+    if (validSolution(entry.solution, size)) candidates.push([String(entry.solution.length), entry.solution]);
+    for (const [count, solution] of candidates) {
+        if (validSolution(solution, size) && Number(count) === solution.length && !found[solution.length]) {
+            found[solution.length] = solution.map(({x, y, kind}) => ({x, y, kind}));
+        }
+    }
+    return found;
+}
 
 // The streak while it is alive (won today or yesterday), else 0.
 export function streakFor(progress, size, today) {
@@ -45,9 +83,8 @@ export function loadProgress(storage) {
             const entry = parsed?.[size];
             if (entry && DATE.test(entry.last) && Number.isInteger(entry.streak) && entry.streak > 0) {
                 progress[size] = {last: entry.last, streak: entry.streak};
-                if (validSolution(entry.solution, size)) {
-                    progress[size].solution = entry.solution.map(({x, y, kind}) => ({x, y, kind}));
-                }
+                const solutions = readSolutions(entry, size);
+                if (Object.keys(solutions).length > 0) progress[size].solutions = solutions;
             }
         }
         return progress;

@@ -1,4 +1,4 @@
-import {isDone, streakFor} from "./progress.js";
+import {isDone, streakFor, cheapestSolution} from "./progress.js";
 import {playHref} from "./play-model.js";
 
 // Pure description of one mode's card on the home page.
@@ -25,6 +25,7 @@ export function toRoman(number) {
 export function cardModel({size, progress, today}) {
     const done = isDone(progress, size, today);
     const streak = streakFor(progress, size, today);
+    const solution = cheapestSolution(progress, size, today);   // the way found with the fewest pieces
     let streakText = "no streak yet";
     if (streak === 1) streakText = "1 day";
     else if (streak > 1) streakText = `${streak} days`;
@@ -35,7 +36,8 @@ export function cardModel({size, progress, today}) {
         done,
         streak,
         roman: toRoman(streak),
-        solution: done ? progress[size].solution ?? [] : [],   // the pieces the player placed today
+        solution,
+        pieces: solution.length > 0 ? solution.length : null,
         streakText,
         playLabel: done ? "Review" : "Play",
         dailyHref: playHref(size, "daily"),
