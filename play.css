@@ -22,6 +22,18 @@ body.play .bar .title {
     font: 400 40px/1 var(--font-head);
 }
 
+body.play .bar .home-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 46px;
+    padding: 5px 12px 6px;
+}
+
+body.play .bar .home-link svg {
+    display: block;
+}
+
 body.play .bar .help-button {
     min-width: 46px;
     font-size: 24px;
@@ -391,10 +403,10 @@ body.play .speed-button:focus-visible {
 
     /* a found solution is a small green check, not a full-height bubble */
     body.play #board-tools .way.found {
-        width: 24px;
-        min-width: 24px;
-        height: 24px;
-        font-size: 14px;
+        width: 28px;
+        min-width: 28px;
+        height: 28px;
+        font-size: 17px;
         align-self: center;
     }
 
@@ -691,7 +703,7 @@ body.play .tutorial-card .pill:disabled {
         white-space: nowrap;
     }
 
-    body.play .bar > a.pill {
+    body.play .bar > a.home-link {
         margin-right: auto;
     }
 }
