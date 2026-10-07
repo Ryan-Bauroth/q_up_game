@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {parsePlayParams, playTitle, playHref, winMessage, waysSummary, CANVAS_SIZES, PLAY_SIZES} from "./play-model.js";
+import {parsePlayParams, playTitle, playHref, winMessage, waysSummary, CANVAS_SIZES, PLAY_SIZES, nextUnsolvedSize} from "./play-model.js";
 
 test("the play page reads its size and mode from the URL", () => {
     assert.deepEqual(parsePlayParams("?size=5&mode=daily"), {size: 5, mode: "daily"});
@@ -39,38 +39,38 @@ test("win messages: unlimited, a first daily win with its streak, and a replay",
 test("daily win messages say how many pieces were used, and nudge toward cheaper ways", () => {
     // first win, not the cheapest way
     assert.equal(winMessage({daily: true, firstWin: true, streak: 1, pieces: 5, cheaperLeft: 2}),
-        "Solved! Streak: 1 day\nUsed 5 pieces.\nCheaper ways exist: try for fewer pieces.");
+        "Solved! Streak: 1 day\nUsed 5 pieces.\nCheaper solutions exist: try for fewer pieces.");
     assert.equal(winMessage({daily: true, firstWin: true, streak: 3, pieces: 4, cheaperLeft: 1}),
-        "Solved! Streak: 3 days\nUsed 4 pieces.\nA cheaper way exists: try for fewer pieces.");
+        "Solved! Streak: 3 days\nUsed 4 pieces.\nA cheaper solution exists: try for fewer pieces.");
     // first win with the cheapest way: no nudge
     assert.equal(winMessage({daily: true, firstWin: true, streak: 2, pieces: 3, cheaperLeft: 0}),
         "Solved! Streak: 2 days\nUsed 3 pieces.");
     // a later, different way
     assert.equal(winMessage({daily: true, firstWin: false, streak: 2, pieces: 4, newWay: true, cheaperLeft: 1}),
-        "A new way to solve it!\nUsed 4 pieces.\nA cheaper way exists: try for fewer pieces.");
+        "A new solution!\nUsed 4 pieces.\nA cheaper solution exists: try for fewer pieces.");
     // the same way again
     assert.equal(winMessage({daily: true, firstWin: false, streak: 2, pieces: 4, cheaperLeft: 1}),
-        "Solved again!\nUsed 4 pieces.\nA cheaper way exists: try for fewer pieces.");
+        "Solved again!\nUsed 4 pieces.\nA cheaper solution exists: try for fewer pieces.");
     // every way found
     assert.equal(winMessage({daily: true, firstWin: false, streak: 2, pieces: 3, newWay: true, allFound: true}),
-        "A new way to solve it!\nUsed 3 pieces.\nYou found every way!");
+        "A new solution!\nUsed 3 pieces.\nYou found every solution!");
     // one piece reads in the singular
     assert.equal(winMessage({daily: true, firstWin: true, streak: 1, pieces: 1}), "Solved! Streak: 1 day\nUsed 1 piece.");
     // unlimited never says any of it
     assert.equal(winMessage({daily: false, pieces: 4, cheaperLeft: 2}), "Solved!");
 });
 
-test("waysSummary: how many ways there are, which are found, how many cheaper ones remain", () => {
+test("waysSummary: how many solutions there are, which are found, how many cheaper ones remain", () => {
     const five = Array.from({length: 5}, (_, i) => ({x: i, y: 0, kind: "tee"}));
     const four = five.slice(0, 4), three = five.slice(0, 3);
     const solutions = [five, four, three];
     assert.deepEqual(waysSummary(solutions, [5]), {
         total: 3, found: 1, cheaperLeft: 2, allFound: false,
-        items: [{found: true, label: "5 pieces"}, {found: false, label: "?"}, {found: false, label: "?"}],
+        items: [{found: true, label: "✓"}, {found: false, label: "4 pieces"}, {found: false, label: "3 pieces"}],
     });
     assert.deepEqual(waysSummary(solutions, [5, 3]), {
         total: 3, found: 2, cheaperLeft: 0, allFound: false,
-        items: [{found: true, label: "5 pieces"}, {found: false, label: "?"}, {found: true, label: "3 pieces"}],
+        items: [{found: true, label: "✓"}, {found: false, label: "4 pieces"}, {found: true, label: "✓"}],
     });
     const all = waysSummary(solutions, [3, 4, 5]);
     assert.equal(all.allFound, true);
@@ -83,8 +83,19 @@ test("waysSummary: how many ways there are, which are found, how many cheaper on
 
 test("winMessage without a piece count, and waysSummary of nothing", () => {
     assert.equal(winMessage({daily: true, firstWin: true, streak: 2, pieces: undefined, cheaperLeft: 1}),
-        "Solved! Streak: 2 days\nA cheaper way exists: try for fewer pieces.");   // no "Used" line
+        "Solved! Streak: 2 days\nA cheaper solution exists: try for fewer pieces.");   // no "Used" line
     const empty = waysSummary([], []);
     assert.equal(empty.cheaperLeft, 0);
     assert.equal(empty.total, 0);
+});
+
+test("nextUnsolvedSize goes on from this size, wraps round and gives null when all are done", () => {
+    const today = "2026-10-07";
+    const done = size => ({last: today, streak: 1, solutions: {}});
+    assert.equal(nextUnsolvedSize({}, 3, today), 5);
+    assert.equal(nextUnsolvedSize({5: done()}, 3, today), 7);
+    assert.equal(nextUnsolvedSize({7: done()}, 5, today), 3);
+    assert.equal(nextUnsolvedSize({3: {last: "2026-10-06", streak: 1, solutions: {}}}, 7, today), 3);   // yesterday's win does not count
+    assert.equal(nextUnsolvedSize({3: done(), 5: done()}, 7, today), null);
+    assert.equal(nextUnsolvedSize({5: done(), 7: done()}, 3, today), null);
 });

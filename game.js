@@ -8,7 +8,7 @@ import {buildFromDefinition} from "./puzzles.js";
 import {generateDefinition} from "./generator.js";
 import {initTutorial} from "./tutorial.js";
 import {canDrag, applyDrop, validatePuzzle, placedPieces} from "./rules.js";
-import {parsePlayParams, playTitle, winMessage, waysSummary, CANVAS_SIZES} from "./play-model.js";
+import {parsePlayParams, playTitle, playHref, winMessage, waysSummary, nextUnsolvedSize, CANVAS_SIZES} from "./play-model.js";
 import {easternDateString} from "./dates.js";
 import {loadDailyFile, getDaily} from "./daily-data.js";
 import {minimalSubset} from "./solutions.js";
@@ -71,6 +71,7 @@ let runComplete = false;
 // piece, or pressing the Run button (now "Keep going" / "Try Again"), restores the player's layout and
 // starts a new attempt.
 let roundOver = false;
+let wonRound = false;     // the finished round was a win: the run button then goes on to the next puzzle
 let animationSpeed = 1.2; // 0.5x / 1.2x / instant (1000x), chosen with the speed buttons
 let preRunGrid = null; // placements as they were just before Run, so a failed try can be adjusted
 
@@ -292,7 +293,16 @@ const waysEl = document.getElementById("ways");
 function showWays(ways) {
     waysBox.hidden = !ways;
     if (!ways) return;
-    waysEl.textContent = `Ways found: ${ways.found} of ${ways.total}`;
+    const label = document.createElement("span");
+    label.textContent = "Solutions";
+    const bubbles = ways.items.map(item => {
+        const bubble = document.createElement("span");
+        bubble.className = "way" + (item.found ? " found" : "");
+        bubble.textContent = item.label;
+        return bubble;
+    });
+    waysEl.setAttribute("aria-label", `Solutions found: ${ways.found} of ${ways.total}`);
+    waysEl.replaceChildren(label, ...bubbles);
 }
 
 // A daily already solved today shows its ways when the page opens.
@@ -337,6 +347,21 @@ function showResult(won) {
     resultText.textContent = won ? winText() : "Not solved.";
 }
 
+// After a win the run button goes on: to the next daily not yet solved (or home
+// when they all are), or to a new puzzle in unlimited mode. Grabbing a piece or
+// Clear still lets the player try another way on this one.
+const nextDailySize = () => nextUnsolvedSize(mergeProgress(progress, loadProgress(browserStorage())), gridScale, today);
+const nextPuzzleLabel = () => isDaily && nextDailySize() === null ? "Back home" : "Next puzzle";
+
+function goToNextPuzzle() {
+    if (!isDaily) {
+        newButton.click();
+        return;
+    }
+    const size = nextDailySize();
+    location.href = size === null ? "index.html" : playHref(size, "daily");
+}
+
 const setRunLabel = text => {
     runLabel.textContent = text;
 };
@@ -348,7 +373,8 @@ runButton.addEventListener("click", async () => {
     // after a finished round this button reads "Keep going" (win) or "Try Again"
     // (miss): put the layout back and play on
     if (roundOver) {
-        restoreAfterRound();
+        if (wonRound) goToNextPuzzle();
+        else restoreAfterRound();
         return;
     }
     if (runComplete) return;
@@ -374,7 +400,8 @@ runButton.addEventListener("click", async () => {
         clearButton.disabled = false;
         roundOver = true;
         setInteractive(true);
-        setRunLabel("Keep going");
+        wonRound = true;
+        setRunLabel(nextPuzzleLabel());
         return;
     }
 
@@ -391,6 +418,7 @@ runButton.addEventListener("click", async () => {
 
 function restoreAfterRound() {
     roundOver = false;
+    wonRound = false;
     board.grid = preRunGrid;
     preRunGrid = null;
     board.effects = Board.emptyEffects();
@@ -406,6 +434,7 @@ function restoreAfterRound() {
 // Clear Board: back to the starting puzzle with every movable piece in hand.
 clearButton.addEventListener("click", () => {
     roundOver = false;
+    wonRound = false;
     setRunLabel("Run");
     pool = createPuzzle();
     preRunGrid = null;
@@ -502,6 +531,7 @@ solutionButton.addEventListener("click", () => {
     }
     pool = fresh.pool.filter((_, i) => !placed.has(i));
     roundOver = false;
+    wonRound = false;
     setRunLabel("Run");
     preRunGrid = null;
     board.effects = Board.emptyEffects();

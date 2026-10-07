@@ -132,15 +132,13 @@ try {
         }
     }
     const placeSolution = () => placeLayout(definition.solution);   // the main way: every hand piece
-    // Solve, then "Keep going" and clear the board, ready to try a different way.
+    // Solve, then clear the board, ready to try a different way.
     const runAndWait = async () => {
         await evaluate(`document.getElementById("run-button").click()`);
         await sleep(1500);
     };
     const startOver = async () => {
-        await evaluate(`document.getElementById("run-button").click()`);   // "Keep going" restores the layout
-        await sleep(300);
-        await evaluate(`document.getElementById("clear-button").click()`);
+        await evaluate(`document.getElementById("clear-button").click()`);   // back to the start, description returns
         await sleep(300);
     };
 
@@ -150,7 +148,7 @@ try {
 
     const piecesWord = n => `${n} ${n === 1 ? "piece" : "pieces"}`;
     const shown = id => evaluate(`getComputedStyle(document.getElementById("${id}")).display !== "none"`);
-    const waysText = () => evaluate(`document.getElementById("ways-box").hidden ? "(hidden)" : document.getElementById("ways").innerText`);
+    const waysText = () => evaluate(`document.getElementById("ways-box").hidden ? "(hidden)" : document.getElementById("ways").getAttribute("aria-label")`);
     const mainCount = definition.solution.length;
     const cheaper = ways ? ways.slice(1) : [];   // the clever ways, largest first
 
@@ -164,17 +162,18 @@ try {
     check(firstBanner.startsWith("Solved! Streak: 1 day"), `first-run banner was "${firstBanner}"`);
     if (ways) {
         check(firstBanner.includes(`Used ${piecesWord(mainCount)}.`), `banner did not say ${mainCount} pieces: "${firstBanner}"`);
-        check(/ways? exists?: try for fewer pieces\./.test(firstBanner), `banner did not say cheaper ways exist: "${firstBanner}"`);
+        check(/solutions? exists?: try for fewer pieces\./.test(firstBanner), `banner did not say cheaper ways exist: "${firstBanner}"`);
         const text = await waysText();
         console.log("ways box:", JSON.stringify(text));
         check(text.includes(`1 of ${ways.length}`), `ways box was "${text}"`);
     }
     check(await shown("summary-box") === false && await shown("result-banner") === true, "the result should replace the description");
+    check(await runLabel() === "Next puzzle", `the run button should say Next puzzle, got "${await runLabel()}"`);
     await shot("2-solved");
 
     // ---- 2. the same way again changes nothing; then the cheaper ways are found one by one
     await startOver();
-    check(await shown("summary-box") === true && await shown("result-banner") === false, "the description should return after Keep going");
+    check(await shown("summary-box") === true && await shown("result-banner") === false, "the description should return after Clear");
     await placeSolution();
     await runAndWait();
     const secondBanner = await banner();
@@ -187,9 +186,9 @@ try {
         await runAndWait();
         const text = await banner();
         console.log(`a cheaper way (${layout.length} pieces):`, JSON.stringify(text));
-        check(text.startsWith("A new way to solve it!"), `a new way's banner was "${text}"`);
+        check(text.startsWith("A new solution!"), `a new way's banner was "${text}"`);
         check(text.includes(`Used ${piecesWord(layout.length)}.`), `banner did not say ${layout.length} pieces: "${text}"`);
-        if (i === cheaper.length - 1) check(text.includes("You found every way!"), `banner did not say every way was found: "${text}"`);
+        if (i === cheaper.length - 1) check(text.includes("You found every solution!"), `banner did not say every way was found: "${text}"`);
     }
     const savedAfterWays = await progress();
     console.log("saved progress after finding the ways:", savedAfterWays);
@@ -230,6 +229,11 @@ try {
     const replayBanner = await banner();
     const savedAfterReplay = await progress();
     console.log("replay banner:", JSON.stringify(replayBanner), "| saved progress:", savedAfterReplay);
+    // "Next puzzle" goes on to a daily that is not solved yet
+    await evaluate(`document.getElementById("run-button").click()`);
+    await sleep(800);
+    const nextUrl = await evaluate(`location.href`);
+    check(nextUrl.includes("mode=daily") && !nextUrl.includes(`size=${size}&`) && !nextUrl.endsWith(`size=${size}`), `Next puzzle should go to another daily, went to ${nextUrl}`);
     check(replayBanner.startsWith("Solved again!"), `replay banner was "${replayBanner}"`);
     check(savedAfterReplay === savedAfterWays, `progress changed on replay: ${savedAfterWays} -> ${savedAfterReplay}`);
 

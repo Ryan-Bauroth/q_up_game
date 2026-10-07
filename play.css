@@ -227,7 +227,38 @@ body.play #ways-box {
 }
 
 body.play #ways {
-    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
     font-size: 18px;
+}
+
+/* one small bubble per way: filled and ticked once found */
+body.play .way {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    border: 2px dashed var(--ink);
+    border-radius: 12px;
+    font-size: 15px;
+    line-height: 1;
+    white-space: nowrap;
+    opacity: 0.7;
+}
+
+body.play .way.found {
+    border-style: solid;
+    border-color: var(--green);
+    background: var(--green);
+    color: #fff;
+    padding: 0;
+    width: 24px;
+    border-radius: 50%;
+    opacity: 1;
 }
 

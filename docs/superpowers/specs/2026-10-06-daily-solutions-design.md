@@ -46,11 +46,11 @@
 ## 6. The daily page (`game.js`, `play.html`, `play-model.js`)
 - Today's puzzle comes from `getDaily(await loadDailyFile(), today, size)`. Unlimited is unchanged.
 - On a win, the pieces used are `minimalSubset(definition, placed)`. The win is recorded (streak on the first win; every new piece count saved), and the banner (several lines) says:
-  - first win: `Solved! Streak: N days`, `Used K pieces.`, and if cheaper ways exist `Cheaper ways exist: try for fewer pieces.` (singular: `A cheaper way exists`);
-  - a later, different way: `A new way to solve it!`, `Used K pieces.`, plus the nudge while cheaper ways remain, or `You found every way!` when all are found;
+  - first win: `Solved! Streak: N days`, `Used K pieces.`, and if cheaper ways exist `Cheaper solutions exist: try for fewer pieces.` (singular: `A cheaper solution exists`);
+  - a later, different way: `A new solution!`, `Used K pieces.`, plus the nudge while cheaper ways remain, or `You found every solution!` when all are found;
   - the same way again: `Solved again!`, `Used K pieces.`, plus the nudge.
   - With no list of ways (the live fallback) the banner shows streak and pieces but never the nudge or the ways box.
-- A "Ways to solve it: 1 of 3 found" box appears after a solve (and when the page opens on an already-solved daily): one chip per way, showing `K pieces ✓` for found ways and `?` for the others, so cheaper ways' sizes stay secret.
+- A "Solutions" box appears after a solve (and when the page opens on an already-solved daily): one bubble per solution, a green tick once found and `K pieces` while not found yet.
 - If a player ever solves with fewer pieces than the list's cheapest way, `console.error` says so loudly (it cannot happen if the list is complete).
 
 ## 7. The home page (`home.js`, `home-model.js`)
@@ -58,7 +58,7 @@
 
 ## 8. Testing
 - Unit tests for every module above, plus the exhaustive solver comparison, the builder (3x3 and 5x5 for real: exactly the wanted solutions, distinct piece counts, main uses every piece, deterministic, re-solving gives the same list), the build script end to end on a temporary file (writes a file the game can read, a second run builds nothing, extending adds days), and the progress and message functions.
-- `tools/e2e-daily.mjs` drives real Chrome: places the main solution (checks the pieces-used line, the nudge and the ways box), places the same way again, finds each cheaper way (checks `A new way...` and `You found every way!`), checks saved progress, the home card's cheapest solution and caption, reopens the page (ways box shows), and replays.
+- `tools/e2e-daily.mjs` drives real Chrome: places the main solution (checks the pieces-used line, the nudge and the ways box), places the same way again, finds each cheaper way (checks `A new way...` and `You found every solution!`), checks saved progress, the home card's cheapest solution and caption, reopens the page (ways box shows), and replays.
 
 ## Out of scope
 - Solution counts or tracking in unlimited mode; hints before solving; deleting or editing saved solutions; building more than the dates in `dailies.json` (the fallback covers the rest).

@@ -1,4 +1,5 @@
 import {formatDay} from "./dates.js";
+import {isDone} from "./progress.js";
 
 // Pure helpers for the play page: what the URL asks for, and the words on it.
 
@@ -18,6 +19,17 @@ export function parsePlayParams(search) {
     return {size, mode};
 }
 
+// The next daily not yet solved today, going on from this size and wrapping round
+// (5 -> 7 -> 3), or null when every size is done.
+export function nextUnsolvedSize(progress, size, today) {
+    const at = PLAY_SIZES.indexOf(size);
+    for (let step = 1; step < PLAY_SIZES.length; step++) {
+        const other = PLAY_SIZES[(at + step) % PLAY_SIZES.length];
+        if (!isDone(progress, other, today)) return other;
+    }
+    return null;
+}
+
 export const playHref = (size, mode) => `play.html?size=${size}&mode=${mode}`;
 
 export function playTitle({size, mode, today}) {
@@ -34,15 +46,15 @@ export function winMessage({daily, firstWin, streak, pieces, newWay = false, che
     if (!daily) return "Solved!";
     const lines = [];
     if (firstWin) lines.push(`Solved! Streak: ${streak} ${streak === 1 ? "day" : "days"}`);
-    else lines.push(newWay ? "A new way to solve it!" : "Solved again!");
+    else lines.push(newWay ? "A new solution!" : "Solved again!");
     if (pieces) lines.push(`Used ${piecesText(pieces)}.`);
-    if (allFound) lines.push("You found every way!");
-    else if (cheaperLeft > 0) lines.push(`${cheaperLeft === 1 ? "A cheaper way exists" : "Cheaper ways exist"}: try for fewer pieces.`);
+    if (allFound) lines.push("You found every solution!");
+    else if (cheaperLeft > 0) lines.push(`${cheaperLeft === 1 ? "A cheaper solution exists" : "Cheaper solutions exist"}: try for fewer pieces.`);
     return lines.join("\n");
 }
 
-// The puzzle's known ways to solve it (largest first) against the piece counts the
-// player has found. Ways not yet found show only "?", so their sizes stay a secret.
+// The puzzle's known solutions (largest first) against the piece counts the player
+// has found. A found one is just a tick; one not found yet says how many pieces it uses.
 export function waysSummary(solutions, foundCounts) {
     const counts = solutions.map(solution => solution.length).sort((a, b) => b - a);
     const isFound = count => foundCounts.includes(count);
@@ -53,6 +65,6 @@ export function waysSummary(solutions, foundCounts) {
         found: counts.filter(isFound).length,
         cheaperLeft: counts.filter(count => count < fewestFound).length,
         allFound: counts.length > 0 && counts.every(isFound),
-        items: counts.map(count => ({found: isFound(count), label: isFound(count) ? piecesText(count) : "?"})),
+        items: counts.map(count => ({found: isFound(count), label: isFound(count) ? "✓" : piecesText(count)})),
     };
 }
