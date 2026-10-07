@@ -34,11 +34,27 @@ test("pickDaily rejects entries that are damaged", () => {
         {attempt: 1, definition, solutions: []},                                 // no solutions
         {attempt: 1, definition, solutions: [[{x: 0, y: 1}]]},                   // a piece with no kind
         {attempt: 1, definition, solutions: "oops"},
+        {attempt: 1, definition: {...definition, locked: [[3, 0, "igniter", 1]]}, solutions},      // outside the board
+        {attempt: 1, definition: {...definition, locked: [[0, 0, "wizard", 1]]}, solutions},       // unknown kind
+        {attempt: 1, definition: {...definition, locked: [[0.5, 0, "igniter", 1]]}, solutions},    // not a whole cell
+        {attempt: 1, definition: {...definition, locked: [[0, 0, "igniter", 0]]}, solutions},      // charges must be positive
+        {attempt: 1, definition: {...definition, hand: ["burster", "wizard"]}, solutions},
+        {attempt: 1, definition: {...definition, solution: undefined}, solutions},                 // no stored solution
+        {attempt: 1, definition, solutions: [[{x: 3, y: 0, kind: "burster"}]]},                    // piece outside the board
+        {attempt: 1, definition, solutions: [[{x: 0, y: 1, kind: "wizard"}]]},
+        {attempt: 1, definition, solutions: [[{x: 0, y: 1, kind: "burster"}], [{x: 1, y: 0, kind: "burster"}]]},   // same count twice
         null,
     ];
     for (const entry of bad) {
         assert.equal(pickDaily({version: 1, puzzles: {"2026-10-07": {3: entry}}}, "2026-10-07", 3), null, JSON.stringify(entry));
     }
+});
+
+test("pickDaily accepts a valid 7x7 entry", () => {
+    const big = {...definition, size: 7};
+    const bigSolutions = [[{x: 0, y: 1, kind: "burster"}], [{x: 0, y: 1, kind: "burster"}, {x: 6, y: 6, kind: "pusher"}]];
+    const picked = pickDaily({version: 1, puzzles: {"2026-10-07": {7: {attempt: 1, definition: big, solutions: bigSolutions}}}}, "2026-10-07", 7);
+    assert.deepEqual(picked, {definition: big, solutions: bigSolutions});
 });
 
 test("getDaily uses the file when it has the day, and the live seeded puzzle when it does not", () => {
@@ -58,4 +74,15 @@ test("loadDailyFile reads the file, and gives null if it cannot", async () => {
     assert.equal(await loadDailyFile("dailies.json", async () => { throw new Error("offline"); }), null);
     assert.equal(await loadDailyFile("dailies.json", async () => ({ok: true, json: async () => { throw new Error("not json"); }})), null);
     assert.equal(await loadDailyFile("dailies.json", async () => ({ok: true, json: async () => "text"})), null);
+});
+
+test("loadDailyFile passes no-cache and a timeout signal, and a rejected fetch gives null", async () => {
+    let seen;
+    await loadDailyFile("dailies.json", async (url, options) => {
+        seen = options;
+        return {ok: true, json: async () => file};
+    });
+    assert.equal(seen.cache, "no-cache");
+    if (AbortSignal.timeout) assert.ok(seen.signal instanceof AbortSignal);
+    assert.equal(await loadDailyFile("dailies.json", () => Promise.reject(new Error("aborted"))), null);
 });

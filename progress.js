@@ -8,6 +8,8 @@ const KEY = "qup-progress-v1";
 const SIZES = [3, 5, 7];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+const copySolution = solution => solution.map(({x, y, kind}) => ({x, y, kind}));
+
 // `solution` is the pieces the player needed to win, [{x, y, kind}]. Solutions are
 // kept by how many pieces they use, so each different way found is remembered:
 //   {last, streak, solutions: {"5": [...], "3": [...]}}
@@ -18,14 +20,14 @@ export function recordWin(progress, size, today, solution = []) {
     // a tab left open past midnight winning yesterday's puzzle must not reset today's streak
     if (entry && today < entry.last) return progress;
     const streak = entry?.last === addDays(today, -1) ? entry.streak + 1 : 1;
-    return {...progress, [size]: {last: today, streak, ...(solution.length > 0 && {solutions: {[solution.length]: solution}})}};
+    return {...progress, [size]: {last: today, streak, ...(solution.length > 0 && {solutions: {[solution.length]: copySolution(solution)}})}};
 }
 
 // Remembers one more way of solving today's puzzle (the first found with that many pieces).
 export function addSolution(progress, size, today, solution) {
     const entry = progress[size];
     if (entry?.last !== today || solution.length === 0 || entry.solutions?.[solution.length]) return progress;
-    return {...progress, [size]: {...entry, solutions: {...entry.solutions, [solution.length]: solution}}};
+    return {...progress, [size]: {...entry, solutions: {...entry.solutions, [solution.length]: copySolution(solution)}}};
 }
 
 // How many pieces each of today's found solutions uses, fewest first.

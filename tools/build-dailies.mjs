@@ -1,13 +1,13 @@
 // Pre-builds the daily puzzles into dailies.json, so every daily has a verified,
-// complete list of ways to solve it (3 ways, or 2 for 3x3), with the main way
+// complete list of ways to solve it (at least 2, no upper limit), with the main way
 // using every piece in the hand.
 //
 //   node tools/build-dailies.mjs [--from YYYY-MM-DD] [--days 30] [--sizes 3,5,7]
 //        [--out dailies.json] [--workers 4] [--cap-seconds 60] [--max-candidates 20000]
 //
 // It keeps what is already in the file, so run it again later with a bigger
-// --days (or a later --from) to add more. 3x3 and 5x5 take about a second per day;
-// 7x7 takes a few minutes per day on one core, so give it several workers.
+// --days (or a later --from) to add more. 7x7 is much slower than 3x3 and 5x5,
+// so give it several workers.
 import {Worker} from "node:worker_threads";
 import {readFileSync, writeFileSync, renameSync, existsSync, realpathSync} from "node:fs";
 import {cpus} from "node:os";

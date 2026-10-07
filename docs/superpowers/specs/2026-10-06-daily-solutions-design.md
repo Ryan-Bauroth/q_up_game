@@ -1,4 +1,4 @@
-# Daily solutions: three ways to solve each daily
+# Daily solutions: at least two ways to solve each daily
 
 ## Goals
 - Every pre-built daily puzzle has a complete, verified list of its solutions: at least two of them, using different numbers of pieces (every size).
@@ -25,12 +25,12 @@
 - Tests: known tiny puzzles; no solution contains an unneeded piece; the stored main solution is always found; limits; and the solver equals an exhaustive search on 3x3 (with and without spares) and small 5x5 puzzles. (A one-off run of this comparison over 5,650 puzzles and 33,464 solutions found no differences.)
 
 ## 3. Building the dailies (`tools/`)
-- `buildDaily(date, size, {maxCandidates, perCandidateMs})` (`tools/daily-builder.js`) tries seeded candidates (seed from the date, size and a counter) from `generateDefinition({size, rng, spares: 0})`, so the hand is exactly the main solution. It fully solves each (stopping early once it has more solutions than wanted, or runs out of time) and accepts one with a complete list of at least 2 solutions (every size, no upper limit) using all different piece counts. It returns `{date, size, attempt, definition, solutions}` or null. The same inputs always give the same puzzle.
+- `buildDaily(date, size, {maxCandidates, perCandidateMs})` (`tools/daily-builder.js`) tries seeded candidates (seed from the date, size and a counter) from `generateDefinition({size, rng, spares: 0})`, so the hand is exactly the main solution. It fully solves each (there is no cap on solutions; it drops a candidate only when it runs out of time) and accepts one with a complete list of at least 2 solutions (every size, no upper limit) using all different piece counts. It returns `{date, size, attempt, definition, solutions}` or null. The same inputs always give the same puzzle.
 - `generateDefinition` gets two options: `spares` (fix the number of spare pieces; 0 means none) and `config` (override the size's recipe for one call). Without them its output is exactly as before, so the pinned live daily puzzles do not change.
 - `tools/build-dailies.mjs` (with a worker file) runs it for a range of dates and sizes on several worker threads and writes `dailies.json`:
   `node tools/build-dailies.mjs [--from YYYY-MM-DD] [--days 30] [--sizes 3,5,7] [--out dailies.json] [--workers N] [--cap-seconds 60] [--max-candidates 20000]`.
   It keeps what is already in the file (so it can be re-run to extend it, or resumed), saves at most every two seconds and always atomically, and reports each puzzle as it finishes.
-- Measured cost: a year of 3x3 and 5x5 takes about 80 seconds on six workers. 7x7 is far slower (hand-7 candidates take seconds each and only a small share have exactly three solutions), so it is built in batches.
+- Measured cost: a year of 3x3 and 5x5 takes about 80 seconds on six workers. 7x7 is far slower (hand-7 candidates take seconds each and only a small share have at least two solutions), so it is built in batches.
 - `dailies.json` format: `{"version": 1, "built": "YYYY-MM-DD", "puzzles": {"2026-10-07": {"3": {"attempt": 4, "definition": {...}, "solutions": [[{x, y, kind}, ...], ...]}, "5": {...}, "7": {...}}}}`.
 
 ## 4. Loading (`daily-data.js`)

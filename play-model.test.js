@@ -80,3 +80,11 @@ test("waysSummary: how many ways there are, which are found, how many cheaper on
     // nothing found yet
     assert.equal(waysSummary(solutions, []).cheaperLeft, 0);
 });
+
+test("winMessage without a piece count, and waysSummary of nothing", () => {
+    assert.equal(winMessage({daily: true, firstWin: true, streak: 2, pieces: undefined, cheaperLeft: 1}),
+        "Solved! Streak: 2 days\nA cheaper way exists: try for fewer pieces.");   // no "Used" line
+    const empty = waysSummary([], []);
+    assert.equal(empty.cheaperLeft, 0);
+    assert.equal(empty.total, 0);
+});

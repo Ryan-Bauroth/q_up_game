@@ -210,3 +210,23 @@ test("damaged saved solutions are dropped but the streak is kept", () => {
     const loaded = loadProgress(fakeStorage({"qup-progress-v1": JSON.stringify(mixed)}));
     assert.deepEqual(loaded, {5: {last: "2026-10-07", streak: 3, solutions: {2: two}}});
 });
+
+test("recordWin and addSolution store copies of the solution", () => {
+    const solution = [{x: 1, y: 2, kind: "burster", extra: "x"}];
+    let progress = recordWin({}, 7, "2026-10-07", solution);
+    solution[0].x = 5;
+    assert.deepEqual(progress[7].solutions[1], [{x: 1, y: 2, kind: "burster"}]);
+    const other = [{x: 0, y: 0, kind: "pusher"}, {x: 3, y: 3, kind: "tee"}];
+    progress = addSolution(progress, 7, "2026-10-07", other);
+    other[0].kind = "tee";
+    assert.deepEqual(progress[7].solutions[2][0], {x: 0, y: 0, kind: "pusher"});
+});
+
+test("loadProgress round-trips a 7x7 save with solutions", () => {
+    let stored;
+    const storage = {getItem: () => stored ?? null, setItem: (_, value) => { stored = value; }};
+    let progress = recordWin({}, 7, "2026-10-07", [{x: 6, y: 6, kind: "burster"}]);
+    progress = addSolution(progress, 7, "2026-10-07", [{x: 0, y: 1, kind: "pusher"}, {x: 6, y: 0, kind: "tee"}]);
+    assert.equal(saveProgress(storage, progress), true);
+    assert.deepEqual(loadProgress(storage), progress);
+});

@@ -62,9 +62,10 @@ export function findSolutions(definition, {maxSolutions = Infinity, timeLimitMs 
     const starters = kinds.filter(isStarterKind);
     const chainKinds = kinds.filter(kind => !isStarterKind(kind));
     const emptyCells = [];
+    const baseGrid = run([]).finalGrid;
     for (let x = 0; x < size; x++) {
         for (let y = 0; y < size; y++) {
-            if (run([]).finalGrid[x][y].isEmpty) emptyCells.push(x * size + y);
+            if (baseGrid[x][y].isEmpty) emptyCells.push(x * size + y);
         }
     }
     const found = new Map();

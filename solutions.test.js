@@ -32,9 +32,9 @@ test("findSolutions finds the one way to solve a simple puzzle", () => {
 });
 
 test("a puzzle can have several solutions, listed largest first", () => {
-    // two targets that a Pair (up and down) or two Pushers... build it by hand:
-    // igniter (1,0) hits (1,1); a Pair V there hits (1,0) (a starter, ignored) and (1,2).
-    // target at (1,2) needs a hit: Pair V at (1,1), or a Tee at (1,1) (left, right, down).
+    // built by hand: the igniter at (1,0) hits (1,1), and the target at (1,2) needs a hit
+    // from a piece standing on (1,1): a Pair V there hits (1,0) and (1,2), a Tee hits
+    // left, right and down, which includes (1,2).
     const puzzle = {
         name: "Test",
         size: 3,
@@ -142,11 +142,57 @@ test("the solver finds exactly the solutions an exhaustive search finds (3x3)", 
 });
 
 test("the solver finds exactly the solutions an exhaustive search finds (5x5)", () => {
+    let compared = 0;
     for (let seed = 1; seed <= 6; seed++) {
         const definition = generateDefinition({size: 5, rng: seeded(seed), spares: 0});
-        if (definition.hand.length > 4) continue;
+        if (definition.hand.length > 4) continue;   // the exhaustive check is too slow for bigger hands
+        compared++;
         const expected = bruteForce(definition);
         const actual = findSolutions(definition).solutions.map(solutionKey).sort();
         assert.deepEqual(actual, expected, `5x5 seed ${seed}`);
     }
+    assert.ok(compared >= 3, `only ${compared} comparisons`);
+});
+// ---- hand-built cases, checked against the exhaustive search ----------------
+
+function agree(definition, label) {
+    const actual = findSolutions(definition).solutions.map(solutionKey).sort();
+    assert.deepEqual(actual, bruteForce(definition), label);
+    return actual;
+}
+
+test("a starter in the hand agrees with the exhaustive search", () => {
+    // a Pusher fires right when run, so it can start the chain from any empty cell
+    const definition = {
+        name: "Test",
+        size: 3,
+        locked: [[1, 1, "receiver", 1]],
+        hand: ["pusher", "burster"],
+        solution: [{x: 0, y: 1, kind: "pusher"}],
+    };
+    assert.ok(agree(definition, "starter in hand").length >= 1);
+});
+
+test("duplicate kinds in the hand agree with the exhaustive search", () => {
+    const definition = {
+        name: "Test",
+        size: 3,
+        locked: [[0, 0, "igniter", 1], [2, 1, "receiver", 1], [1, 2, "receiver", 1]],
+        hand: ["burster", "burster", "pusher"],
+        solution: [{x: 0, y: 1, kind: "burster"}],
+    };
+    agree(definition, "duplicate kinds");
+});
+
+test("a layout that already wins with no pieces has no solutions", () => {
+    // the igniter at (0,0) hits the target at (0,1) by itself
+    const definition = {
+        name: "Test",
+        size: 3,
+        locked: [[0, 0, "igniter", 1], [0, 1, "receiver", 1]],
+        hand: ["burster", "pusher"],
+        solution: [],
+    };
+    assert.deepEqual(agree(definition, "already won"), []);
+    assert.deepEqual(findSolutions(definition).solutions, []);
 });
