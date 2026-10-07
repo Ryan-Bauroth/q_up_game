@@ -117,3 +117,27 @@ test("beam pieces stay within the size's limit, and Row and Column pieces both t
     assert.ok(seen.has("row"), "no Row piece in 180 puzzles");
     assert.ok(seen.has("column"), "no Column piece in 180 puzzles");
 });
+
+test("spares: 0 gives a hand that is exactly the solution, so the main solution uses every piece", () => {
+    for (const size of SIZES) {
+        for (const seed of [1, 2, 3, 4]) {
+            const definition = generateDefinition({size, rng: seeded(seed), spares: 0});
+            assert.equal(definition.hand.length, definition.solution.length);
+            assert.deepEqual([...definition.hand].sort(), definition.solution.map(s => s.kind).sort());
+            assert.equal(isSensible(definition), true);
+        }
+    }
+});
+
+test("a config override changes the recipe for one call", () => {
+    const definition = generateDefinition({size: 3, rng: seeded(5), spares: 0, config: {pieces: [6, 8], hand: [4, 5]}});
+    assert.ok(definition.solution.length >= 4, `placed ${definition.solution.length}`);
+    // the shared recipe is untouched
+    assert.deepEqual(SIZE_CONFIG[3].hand, [1, 2]);
+});
+
+test("without the new options, generation is exactly what it was (daily puzzles must not change)", () => {
+    const a = generateDefinition({size: 5, rng: seeded(77)});
+    const b = generateDefinition({size: 5, rng: seeded(77), spares: undefined, config: undefined});
+    assert.deepEqual(a, b);
+});

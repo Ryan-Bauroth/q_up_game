@@ -28,9 +28,13 @@ export const SIZE_CONFIG = {
 
 const isBeamKind = kind => KINDS[kind].abilities.some(id => ABILITIES[id].line);
 
-export function generateDefinition({size = 5, rng = Math.random, maxAttempts = 20000} = {}) {
-    const config = SIZE_CONFIG[size];
-    if (!config) throw new Error(`unsupported puzzle size: ${size}`);
+// `spares` fixes how many spare hand pieces to add (default: 1 or 2 at random;
+// 0 makes the hand exactly the solution). `config` overrides the size's recipe
+// for this call only.
+export function generateDefinition({size = 5, rng = Math.random, maxAttempts = 20000, spares: fixedSpares, config: configOverride} = {}) {
+    const baseConfig = SIZE_CONFIG[size];
+    const config = baseConfig && {...baseConfig, ...configOverride};
+    if (!baseConfig) throw new Error(`unsupported puzzle size: ${size}`);
 
     const pick = list => list[Math.floor(rng() * list.length)];
     const between = ([min, max]) => min + Math.floor(rng() * (max - min + 1));
@@ -117,7 +121,7 @@ export function generateDefinition({size = 5, rng = Math.random, maxAttempts = 2
         const locked = placed.filter(p => !solution.includes(p));
 
         // 1-2 spares
-        const spares = Array.from({length: 1 + Math.floor(rng() * 2)}, () => pick(rng() < 0.15 ? STARTER_KINDS : REACTOR_KINDS));
+        const spares = Array.from({length: fixedSpares ?? 1 + Math.floor(rng() * 2)}, () => pick(rng() < 0.15 ? STARTER_KINDS : REACTOR_KINDS));
 
         const definition = {
             name: "Random",
