@@ -20,6 +20,8 @@ export function buildDaily(date, size, {maxCandidates = 100000, perCandidateMs =
         const {solutions, complete} = findSolutions(definition, {maxSolutions: want + 1, timeLimitMs: perCandidateMs});
         onCandidate?.({attempt, solutions: solutions.length, complete});
         if (!complete || solutions.length !== want) continue;
+        // solutions are largest first: the main one must use every piece in the hand
+        if (solutions[0].length !== definition.hand.length) continue;
         const counts = new Set(solutions.map(solution => solution.length));
         if (counts.size !== want) continue;
         return {date, size, attempt, definition, solutions};

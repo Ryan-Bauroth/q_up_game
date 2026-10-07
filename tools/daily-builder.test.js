@@ -48,3 +48,13 @@ test("different days give different puzzles", () => {
 test("it gives up (null) when no candidate is allowed", () => {
     assert.equal(buildDaily("2026-10-07", 5, {maxCandidates: 0, perCandidateMs: 5000}), null);
 });
+
+test("every accepted puzzle's largest solution uses every hand piece", () => {
+    for (const size of [3, 5]) {
+        for (const date of ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05"]) {
+            const built = buildDaily(date, size, {maxCandidates: 20000, perCandidateMs: 5000});
+            assert.ok(built, `${date} ${size}`);
+            assert.equal(built.solutions[0].length, built.definition.hand.length, `${date} ${size}`);
+        }
+    }
+});
