@@ -29,7 +29,9 @@
 </header>
 <div id="game-container">
     <div id="canvas-container">
+        <div id="info-row"></div>
         <div class="screen"><canvas id="canvas" width="400" height="400">Error</canvas></div>
+        <div id="board-tools"></div>
         <div id="nav-controls" role="group" aria-label="Change puzzle">
             <button id="back-button" class="nav-button">&lsaquo; Back</button>
             <div id="hand-controls">
@@ -49,7 +51,7 @@
         <div id="result-banner" class="up box hidden"><span id="result-text"></span></div>
         <div id="controls">
             <button id="retry-button" class="up btn" hidden><span>Try again</span></button>
-            <button id="run-button" class="up btn fill"><span id="run-label">Run</span></button>
+            <button id="run-button" class="up btn fill" data-label="Run"><svg class="play-icon" viewBox="0 0 16 16" width="26" height="26" aria-hidden="true"><path d="M4 2.2v11.6a.8.8 0 0 0 1.2.7l9-5.8a.8.8 0 0 0 0-1.4l-9-5.8A.8.8 0 0 0 4 2.2z" fill="currentColor"/></svg><span id="run-label">Run</span></button>
             <button id="solution-button">Show Solution</button>
         </div>
         <div id="view-controls" role="group" aria-label="Help, animation speed and display">

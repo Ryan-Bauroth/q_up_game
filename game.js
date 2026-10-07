@@ -31,19 +31,39 @@ const poolEl = document.getElementById("pool");
 const runButton = document.getElementById("run-button");
 const clearButton = document.getElementById("clear-button");
 
-// On narrow screens the eraser sits to the right of the hand; otherwise it stays
-// between Back and Next.
+// On narrow screens the page is rearranged: the description (or the result) sits
+// above the board with a play button beside it; the speed buttons, the solutions
+// box and the eraser share a row under the board (speed left, eraser right).
+// Otherwise everything lives in its desktop place: the eraser between Back and
+// Next, the rest in the side panel.
 const handControls = document.getElementById("hand-controls");
+const viewControls = document.getElementById("view-controls");
+const summaryBox = document.getElementById("summary-box");
+const waysBoxEl = document.getElementById("ways-box");
 const narrowScreen = window.matchMedia("(max-width: 860px)");
-function placeEraser() {
+function placeMobileLayout() {
+    const sidePanel = document.getElementById("side-panel");
+    const controls = document.getElementById("controls");
     if (narrowScreen.matches) {
-        document.getElementById("hand-row").appendChild(handControls);
+        document.getElementById("info-row").append(summaryBox, document.getElementById("result-banner"), document.getElementById("run-button"));
+        document.getElementById("board-tools").append(viewControls, waysBoxEl, handControls);
     } else {
+        sidePanel.prepend(summaryBox, document.getElementById("result-banner"));
+        controls.insertBefore(document.getElementById("run-button"), document.getElementById("solution-button"));
         document.getElementById("nav-controls").insertBefore(handControls, document.getElementById("forward-controls"));
+        sidePanel.append(viewControls, waysBoxEl);
     }
 }
-placeEraser();
-narrowScreen.addEventListener("change", placeEraser);
+placeMobileLayout();
+narrowScreen.addEventListener("change", placeMobileLayout);
+
+// The width the board's frame has at full size, so the rows above and below it
+// can be exactly as wide as the board (which shrinks to fit a narrow screen).
+function setBoardWidthVar() {
+    const screenBox = canvas.parentElement;
+    const frame = screenBox.offsetWidth - canvas.clientWidth;   // bezel padding and border
+    document.getElementById("canvas-container").style.setProperty("--board-w", `${canvas.width + frame}px`);
+}
 const resultBanner = document.getElementById("result-banner");
 const resultText = document.getElementById("result-text");
 const runLabel = document.getElementById("run-label");
@@ -51,6 +71,7 @@ const retryButton = document.getElementById("retry-button");
 
 const boardSize = CANVAS_SIZES[gridScale];
 canvas.width = canvas.height = boardSize;
+setBoardWidthVar();
 
 const board = new Board(canvas, boardSize, gridScale);
 
@@ -386,6 +407,7 @@ function showWays(ways) {
     waysBox.hidden = !ways;
     if (!ways) return;
     const label = document.createElement("span");
+    label.className = "ways-label";
     label.textContent = "Solutions:";
     const bubbles = ways.items.map(item => {
         const bubble = document.createElement("span");
@@ -460,6 +482,7 @@ retryButton.addEventListener("click", () => {
 
 const setRunLabel = text => {
     runLabel.textContent = text;
+    runButton.dataset.label = text;   // lets narrow screens show just a play icon for "Run"
 };
 
 // Run replays the simulation as an animation. If the puzzle isn't solved,

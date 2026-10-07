@@ -81,17 +81,48 @@ body.play #hand-controls {
     grid-column: 2;
 }
 
-/* the hand, with the eraser beside it on narrow screens */
+/* the hand */
 body.play #hand-row {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 14px;
     margin-top: 18px;
 }
 
-body.play #hand-row #hand-controls {
-    grid-column: auto;
+/* the speed buttons and the eraser, in a row under the board on narrow screens */
+body.play #board-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+}
+
+body.play #info-row {
+    display: none;
+}
+
+body.play .play-icon {
+    display: none;
+}
+
+body.play #board-tools:empty {
+    display: none;
+}
+
+body.play #board-tools .speed-button,
+body.play #board-tools .nav-button {
+    font-family: var(--font-body);
+    font-size: 17px;
+    color: var(--ink);
+    background: var(--white);
+    border: 2.4px solid var(--ink);
+    border-radius: 12px 16px 11px 17px / 16px 11px 17px 12px;
+    box-shadow: 2px 3px 0 var(--ink);
+}
+
+body.play #board-tools .speed-button.selected {
+    color: var(--white);
+    background: var(--ink);
 }
 
 /* ---------- the hand: raised tiles ---------- */
@@ -197,7 +228,6 @@ body.play #result-banner.lose {
 /* ---------- smaller controls: inked, but still (no wobble) ---------- */
 
 body.play #nav-controls .nav-button,
-body.play #hand-row .nav-button,
 body.play #solution-button,
 body.play .speed-button {
     font-family: var(--font-body);
@@ -220,7 +250,6 @@ body.play .speed-button.selected {
 }
 
 body.play #nav-controls .nav-button:focus-visible,
-body.play #hand-row .nav-button:focus-visible,
 body.play #solution-button:focus-visible,
 body.play .speed-button:focus-visible {
     outline: 3px solid var(--coral);
@@ -263,56 +292,114 @@ body.play .speed-button:focus-visible {
         display: contents;
     }
 
-    body.play #summary-box,
-    body.play #result-banner,
-    body.play #controls,
-    body.play #ways-box {
-        width: min(calc(100% - 6px), 414px);
+    /* every row is as wide as the board; the 4px on the right leaves room for the buttons' shadows */
+    body.play #controls {
+        width: min(100%, var(--board-w, 420px));
+        margin: 0 auto 6px;
+        padding-right: 4px;
         box-sizing: border-box;
     }
 
-    body.play #view-controls {
-        width: min(100%, 420px);
-        justify-content: flex-end;
+    /* the description (or the result that replaces it) with the play button beside it, above the board */
+    body.play #info-row {
+        display: flex;
+        align-items: stretch;
+        gap: 12px;
+        width: min(100%, var(--board-w, 420px));   /* as wide as the board */
+        margin: 0 auto 14px;
+        padding-right: 4px;
+        box-sizing: border-box;
     }
 
-    body.play #summary-box,
-    body.play #result-banner {
-        order: -1;
-        margin-bottom: 0;
+    body.play #info-row #summary-box {
+        text-align: left;   /* the board's column is centered; the description reads from the left */
     }
 
-    /* a big hand (7x7) shrinks its tiles so the hand and the eraser fit on one row */
-    body.play #hand-row {
-        max-width: 100%;
-        gap: 8px;
+    body.play #info-row #summary-box,
+    body.play #info-row #result-banner {
+        flex: 1 1 0;
+        min-width: 0;
+        margin: 0 0 6px 0;
     }
 
-    body.play #pool {
+    body.play #info-row #run-button {
+        flex: none;
+        min-width: 64px;
+        margin: 0 0 6px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    body.play #info-row #run-button .play-icon {
+        display: block;
+    }
+
+    /* "Run" shows as just the play icon; other labels (Next, Try Again...) show as words */
+    body.play #info-row #run-button[data-label="Run"] #run-label {
+        display: none;
+    }
+
+    body.play #board-tools {
+        width: min(100%, var(--board-w, 420px));
+        margin-inline: auto;
+        padding-right: 4px;
+        box-sizing: border-box;
+    }
+
+    body.play #board-tools #view-controls {
+        margin: 0;
+        justify-content: flex-start;
+    }
+
+    /* the solutions, as just their bubbles (no box around them), as tall as the buttons beside them */
+    body.play #board-tools {
+        --tool-h: 36px;
+    }
+
+    body.play #board-tools .speed-button,
+    body.play #board-tools .nav-button {
+        height: var(--tool-h);
+        box-sizing: border-box;
+    }
+
+    body.play #board-tools #ways-box {
         flex: 0 1 auto;
         min-width: 0;
-        gap: 8px;
-        align-items: center;   /* keep the shrunken tiles square, not stretched to the row's height */
+        margin: 0 6px;
+        background: none;
+        border: 0;
+        box-shadow: none;
     }
 
-    body.play #pool .pool-node,
-    body.play #pool .pool-slot {
-        flex: 0 1 62px;
-        min-width: 0;
-        width: 62px;
-        height: auto;
-        aspect-ratio: 1;
-        box-sizing: border-box;
-        padding: 2px;
+    body.play #board-tools #ways-box > .line {
+        display: none;
     }
 
-    body.play #pool .pool-node canvas {
-        width: 100%;
-        height: 100%;
+    body.play #board-tools #ways {
+        padding: 0;
+        gap: 6px;
     }
 
-    body.play #hand-row #hand-controls {
-        flex: none;
+    body.play #board-tools .way {
+        height: var(--tool-h);
+        min-width: var(--tool-h);
+        font-size: 16px;
+        border-radius: calc(var(--tool-h) / 2);
+    }
+
+    /* a found solution is a small green check, not a full-height bubble */
+    body.play #board-tools .way.found {
+        width: 24px;
+        min-width: 24px;
+        height: 24px;
+        font-size: 14px;
+        align-self: center;
+    }
+
+    body.play #board-tools .ways-label {
+        display: none;
     }
 
     body.play #summary-panel {
@@ -321,10 +408,19 @@ body.play .speed-button:focus-visible {
         font-size: 15px;
     }
 
+    body.play #summary-panel .summary-title {
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+
+    body.play #hand-row {
+        margin-top: 6px;
+    }
+
     body.play #result-banner {
         min-height: 84px;
         padding: 8px 12px;
-        font-size: 18px;
+        font-size: 17px;
     }
 }
 
@@ -574,11 +670,28 @@ body.play .tutorial-card .pill:disabled {
 
 @media (max-width: 420px) {
     body.play .bar {
-        padding: 16px 12px 4px;
+        padding: 16px 12px 4px 8px;
         gap: 10px;
     }
 
+}
+
+/* the title gets a row of its own, centered, so it never wraps */
+@media (max-width: 520px) {
+    body.play .bar {
+        flex-wrap: wrap;
+        row-gap: 4px;
+    }
+
     body.play .bar .title {
-        font-size: 28px;
+        order: 3;
+        flex: 1 0 100%;
+        text-align: center;
+        font-size: 30px;
+        white-space: nowrap;
+    }
+
+    body.play .bar > a.pill {
+        margin-right: auto;
     }
 }
