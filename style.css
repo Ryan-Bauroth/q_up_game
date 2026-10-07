@@ -15,6 +15,7 @@ body {
 }
 
 #canvas {
+    touch-action: none;
     image-rendering: pixelated;
     -webkit-user-drag: none;
 }
@@ -36,6 +37,7 @@ body {
     height: 52px;
     cursor: grab;
     user-select: none;
+    touch-action: none;
 }
 
 .pool-node canvas {

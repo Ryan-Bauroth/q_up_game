@@ -129,7 +129,7 @@ function renderPool() {
         drawPieceShape(pieceCanvas.getContext("2d"), node, POOL_PIECE_SIZE / 2, POOL_PIECE_SIZE / 2, POOL_PIECE_SIZE * 0.92);
         el.appendChild(pieceCanvas);
 
-        el.addEventListener("mousedown", e => startDragFromPool(e, index));
+        el.addEventListener("pointerdown", e => startDragFromPool(e, index));
         el.addEventListener("mouseenter", () => renderSummary(node));
         el.addEventListener("mouseleave", () => renderSummary(null));
         poolEl.appendChild(el);
@@ -205,7 +205,7 @@ function startDragFromPool(e, index) {
     board.drawBoard();
 }
 
-canvas.addEventListener("mousedown", e => {
+canvas.addEventListener("pointerdown", e => {
     if (!board.interactive) return;
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
@@ -230,13 +230,19 @@ canvas.addEventListener("mousedown", e => {
     }
 });
 
-document.addEventListener("mouseup", e => {
+document.addEventListener("pointerup", e => finishDrag(e, false));
+// A cancelled touch (system gesture, etc.) puts the piece back where it came from.
+document.addEventListener("pointercancel", e => finishDrag(e, true));
+
+function finishDrag(e, cancelled) {
     if (!board.dragging) return;
 
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-    const target = cellFromPoint(mouseX, mouseY);
+    const target = cancelled
+        ? (board.dragSource === "board" ? {x: board.dragI, y: board.dragJ} : null)
+        : cellFromPoint(mouseX, mouseY);
 
     applyDrop(board.grid, pool, {
         source: board.dragSource,
@@ -259,9 +265,9 @@ document.addEventListener("mouseup", e => {
     renderSummary(hovered ? board.grid[hovered.x][hovered.y] : null);
     setPreview(hovered);
     board.drawBoard();
-});
+}
 
-document.addEventListener("mousemove", e => {
+document.addEventListener("pointermove", e => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
@@ -484,7 +490,7 @@ dotsItems.forEach(item => item.addEventListener("click", () => {
     setDotsMenuOpen(false);
     dotsButton.focus();
 }));
-document.addEventListener("mousedown", e => {
+document.addEventListener("pointerdown", e => {
     if (!dotsMenu.hidden && !e.target.closest(".dots-menu-wrap")) setDotsMenuOpen(false);
 });
 document.addEventListener("keydown", e => {
