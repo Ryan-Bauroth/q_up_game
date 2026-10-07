@@ -9,17 +9,15 @@ const ROW_BEAM_NAME = "Blue";
 // Pure: the short description shown when you hover a piece: its color as the
 // title, then quick facts (as bullet points), then a one-sentence description
 // of what it does.
-// "Activations needed" is how many more times the piece must be activated to reach 0.
+// "Activations needed" is how many more times the piece can be activated before it
+// reads 0 (a hand piece shows 1 too, even though it need not be activated). A
+// starter has no count: it fires by itself when you press Run.
 export function describePiece(node) {
     const type = pieceType(node);
     const title = type === "beam" && beamAxis(node) === "row"
         ? ROW_BEAM_NAME
         : COLOR_NAMES[type] ?? (skipDepth(node) > 0 ? "Red w/ outline" : "Red");
-    const starter = isStarter(node);
-    let needed;
-    if (starter) needed = "none";
-    else if (!node.required) needed = "0";
-    else needed = node.charges <= 0 ? "0 (done)" : String(node.charges);
+    const needed = node.charges <= 0 ? "0 (done)" : String(node.charges);
 
     const description = node.abilities.length === 0
         ? "Just needs to be activated."
@@ -27,9 +25,10 @@ export function describePiece(node) {
 
     return {
         title,
-        // quick facts: what it needs, plus "Locked" only when the piece is locked
+        // quick facts: what it needs (or, for a starter, that it goes on Run), plus
+        // "Locked" only when the piece is locked
         facts: [
-            ["Activations needed", needed],
+            isStarter(node) ? ["Activates on Run", null] : ["Activations needed", needed],
             ...(node.locked ? [["Locked", null]] : []),
         ],
         description,

@@ -21,10 +21,15 @@ test("quick facts come first (hits needed, then locked), then the description", 
     assert.equal("note" in d, false);
 });
 
-test("a starter needs no hits; a spent piece reads done", () => {
+test("a starter has no activation count: it says it activates on Run", () => {
     const starter = describePiece(make(["runPulseDown"]));
-    assert.equal(fact(starter, "Activations needed"), "none");
+    assert.deepEqual(starter.facts, [["Activates on Run", null]]);   // shown as just the bold label
     assert.equal(starter.description, "On Run: activates the cell below.");
+    // locked starters keep their Locked bullet after it
+    assert.deepEqual(describePiece(make(["runPulseDown"], 1, true)).facts, [["Activates on Run", null], ["Locked", null]]);
+});
+
+test("a piece that has fired reads done", () => {
     const spent = make(["adjacentBurst"]);
     spent.charges = 0;
     assert.equal(fact(describePiece(spent), "Activations needed"), "0 (done)");
@@ -47,7 +52,7 @@ test("the Locked bullet only appears when the piece is locked", () => {
     assert.equal(describePiece(make(["adjacentBurst"], 1, true)).facts.some(([l]) => l === "Locked"), true);
 });
 
-test("a piece that isn't required needs 0 activations", () => {
+test("a hand piece (not required) still shows 1 activation, never 0", () => {
     const optional = new Node({id: 1, summary: "Piece", charges: 1, abilities: ["adjacentBurst"], required: false});
-    assert.equal(fact(describePiece(optional), "Activations needed"), "0");
+    assert.equal(fact(describePiece(optional), "Activations needed"), "1");
 });
