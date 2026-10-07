@@ -43,6 +43,12 @@ body.play .bar .help-button[data-tip]:focus-visible::after {
     transform: translateY(0);
 }
 
+/* the dots menu sits by the ?, so its tip drops below and stays on screen */
+body.play .bar .dots-menu-wrap > button[data-tip]::after {
+    top: calc(100% + 10px);
+    bottom: auto;
+}
+
 /* ---------- layout ---------- */
 
 body.play #game-container {
@@ -122,8 +128,9 @@ body.play #summary-panel {
 }
 
 body.play #controls {
+    flex-wrap: wrap;
     gap: 14px;
-    margin-bottom: 6px;
+    margin: 0 6px 6px 0;   /* the same width as the description box, with room for the shadow */
 }
 
 body.play #controls button {
@@ -133,8 +140,19 @@ body.play #controls button {
 }
 
 /* makes room for the button's shadow */
-body.play #controls #run-button {
-    margin-right: 4px;
+body.play #controls #run-button,
+body.play #controls #solution-button {
+    flex: 1 1 100%;
+}
+
+/* after a win: Try again and Next split the row */
+body.play #retry-button[hidden] {
+    display: none;
+}
+
+body.play #controls:has(#retry-button:not([hidden])) #retry-button,
+body.play #controls:has(#retry-button:not([hidden])) #run-button {
+    flex: 1 1 0;
 }
 
 /* the result takes the description's place until the player moves on */

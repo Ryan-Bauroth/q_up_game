@@ -15,6 +15,16 @@
 <header class="bar">
     <a class="up pill" href="index.html">&larr; Home</a>
     <h1 id="page-title" class="title"></h1>
+    <div class="dots-menu-wrap">
+        <button id="dots-menu-button" class="speed-button" data-tip="Dots" aria-label="Dots" aria-haspopup="menu" aria-expanded="false">
+            <svg viewBox="0 0 24 16" width="24" height="14" aria-hidden="true"><circle cx="5" cy="9.5" r="2.1" fill="currentColor"/><circle cx="11" cy="9.5" r="2.1" fill="currentColor"/><circle cx="8" cy="5" r="2.1" fill="currentColor"/><path d="M16.5 6.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div id="dots-menu" class="dots-menu" role="menu" aria-label="Dots" hidden>
+            <button role="menuitemradio" data-mode="skips" aria-checked="true">Some dots</button>
+            <button role="menuitemradio" data-mode="all" aria-checked="false">All dots</button>
+            <button role="menuitemradio" data-mode="none" aria-checked="false">No dots</button>
+        </div>
+    </div>
     <button id="help-button" class="up pill help-button" data-tip="How to play" aria-label="How to play"><span>?</span></button>
 </header>
 <div id="game-container">
@@ -39,6 +49,7 @@
         <div id="summary-box" class="up box"><div id="summary-panel">Hover a piece for details.</div></div>
         <div id="result-banner" class="up box hidden"><span id="result-text"></span></div>
         <div id="controls">
+            <button id="retry-button" class="up btn" hidden><span>Try again</span></button>
             <button id="run-button" class="up btn fill"><span id="run-label">Run</span></button>
             <button id="solution-button">Show Solution</button>
         </div>
@@ -52,16 +63,6 @@
             <button class="speed-button" data-speed="1000" data-tip="Instant" aria-label="Instant">
                 <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M9.5 1L3 9h4l-1 6 7-9H9z" fill="currentColor" stroke="currentColor" stroke-width="0.6" stroke-linejoin="round"/></svg>
             </button>
-            <div class="dots-menu-wrap">
-                <button id="dots-menu-button" class="speed-button" data-tip="Dots" aria-label="Dots" aria-haspopup="menu" aria-expanded="false">
-                    <svg viewBox="0 0 24 16" width="24" height="14" aria-hidden="true"><circle cx="5" cy="9.5" r="2.1" fill="currentColor"/><circle cx="11" cy="9.5" r="2.1" fill="currentColor"/><circle cx="8" cy="5" r="2.1" fill="currentColor"/><path d="M16.5 6.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
-                <div id="dots-menu" class="dots-menu" role="menu" aria-label="Dots" hidden>
-                    <button role="menuitemradio" data-mode="skips" aria-checked="true">Some dots</button>
-                    <button role="menuitemradio" data-mode="all" aria-checked="false">All dots</button>
-                    <button role="menuitemradio" data-mode="none" aria-checked="false">No dots</button>
-                </div>
-            </div>
         </div>
         <div id="ways-box" class="up box" hidden><div id="ways"></div></div>
     </div>

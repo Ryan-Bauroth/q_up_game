@@ -168,7 +168,8 @@ try {
         check(text.includes(`1 of ${ways.length}`), `ways box was "${text}"`);
     }
     check(await shown("summary-box") === false && await shown("result-banner") === true, "the result should replace the description");
-    check(await runLabel() === "Next puzzle", `the run button should say Next puzzle, got "${await runLabel()}"`);
+    check(await shown("retry-button") === true, "after a win there should be a Try again button");
+    check(await runLabel() === "Next", `the run button should say Next, got "${await runLabel()}"`);
     await shot("2-solved");
 
     // ---- 2. the same way again changes nothing; then the cheaper ways are found one by one

@@ -34,6 +34,7 @@ const clearButton = document.getElementById("clear-button");
 const resultBanner = document.getElementById("result-banner");
 const resultText = document.getElementById("result-text");
 const runLabel = document.getElementById("run-label");
+const retryButton = document.getElementById("retry-button");
 
 const boardSize = CANVAS_SIZES[gridScale];
 canvas.width = canvas.height = boardSize;
@@ -72,6 +73,11 @@ let runComplete = false;
 // starts a new attempt.
 let roundOver = false;
 let wonRound = false;     // the finished round was a win: the run button then goes on to the next puzzle
+// after a win the button row is Try again | Next
+function setWon(won) {
+    wonRound = won;
+    retryButton.hidden = !won;
+}
 let animationSpeed = 1.2; // 0.5x / 1.2x / instant (1000x), chosen with the speed buttons
 let preRunGrid = null; // placements as they were just before Run, so a failed try can be adjusted
 
@@ -351,7 +357,7 @@ function showResult(won) {
 // when they all are), or to a new puzzle in unlimited mode. Grabbing a piece or
 // Clear still lets the player try another way on this one.
 const nextDailySize = () => nextUnsolvedSize(mergeProgress(progress, loadProgress(browserStorage())), gridScale, today);
-const nextPuzzleLabel = () => isDaily && nextDailySize() === null ? "Back home" : "Next puzzle";
+const nextPuzzleLabel = () => isDaily && nextDailySize() === null ? "Back home" : "Next";
 
 function goToNextPuzzle() {
     if (!isDaily) {
@@ -361,6 +367,10 @@ function goToNextPuzzle() {
     const size = nextDailySize();
     location.href = size === null ? "index.html" : playHref(size, "daily");
 }
+
+retryButton.addEventListener("click", () => {
+    if (roundOver) restoreAfterRound();
+});
 
 const setRunLabel = text => {
     runLabel.textContent = text;
@@ -400,7 +410,7 @@ runButton.addEventListener("click", async () => {
         clearButton.disabled = false;
         roundOver = true;
         setInteractive(true);
-        wonRound = true;
+        setWon(true);
         setRunLabel(nextPuzzleLabel());
         return;
     }
@@ -418,7 +428,7 @@ runButton.addEventListener("click", async () => {
 
 function restoreAfterRound() {
     roundOver = false;
-    wonRound = false;
+    setWon(false);
     board.grid = preRunGrid;
     preRunGrid = null;
     board.effects = Board.emptyEffects();
@@ -434,7 +444,7 @@ function restoreAfterRound() {
 // Clear Board: back to the starting puzzle with every movable piece in hand.
 clearButton.addEventListener("click", () => {
     roundOver = false;
-    wonRound = false;
+    setWon(false);
     setRunLabel("Run");
     pool = createPuzzle();
     preRunGrid = null;
@@ -531,7 +541,7 @@ solutionButton.addEventListener("click", () => {
     }
     pool = fresh.pool.filter((_, i) => !placed.has(i));
     roundOver = false;
-    wonRound = false;
+    setWon(false);
     setRunLabel("Run");
     preRunGrid = null;
     board.effects = Board.emptyEffects();
