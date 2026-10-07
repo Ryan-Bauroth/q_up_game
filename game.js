@@ -129,7 +129,12 @@ function renderPool() {
         drawPieceShape(pieceCanvas.getContext("2d"), node, POOL_PIECE_SIZE / 2, POOL_PIECE_SIZE / 2, POOL_PIECE_SIZE * 0.92);
         el.appendChild(pieceCanvas);
 
-        el.addEventListener("pointerdown", e => startDragFromPool(e, index));
+        el.addEventListener("pointerdown", e => {
+            if (e.pointerType === "mouse") return startDragFromPool(e, index);
+            if (!board.interactive) return;
+            e.preventDefault();
+            selectOnTouch(e, () => { renderSummary(node); setPreview(null); }, ev => startDragFromPool(ev, index));
+        });
         // Mouse hover only: on touch the emulated mouse events linger after a
         // tap, so a tapped piece is selected (and deselected) by pointerdown instead.
         el.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") renderSummary(node); });
@@ -187,6 +192,17 @@ function retryFromFailure() {
     if (roundOver) restoreAfterRound();
 }
 
+// On touch, pressing a piece selects it right away, but it only lifts off once
+// the finger has moved a little, so a quick, slightly off-center tap doesn't
+// make the piece jump up.
+const TOUCH_DRAG_SLOP = 10;
+let pendingTouchDrag = null;
+
+function selectOnTouch(e, select, startDrag) {
+    select();
+    pendingTouchDrag = {x: e.clientX, y: e.clientY, pointerId: e.pointerId, startDrag};
+}
+
 function startDragFromPool(e, index) {
     retryFromFailure();
     if (!board.interactive) return;
@@ -220,25 +236,47 @@ canvas.addEventListener("pointerdown", e => {
     }
 
     if (cell != null && canDrag(board.grid[cell.x][cell.y])) {
-        e.preventDefault();
-        board.dragging = true;
-        board.dragSource = "board";
-        board.dragI = cell.x;
-        board.dragJ = cell.y;
-        board.dragX = mouseX;
-        board.dragY = mouseY;
-        board.draggedObject = board.grid[cell.x][cell.y];
-        board.previewCells = [];
-        board.hoverCell = null;
-        board.grid[cell.x][cell.y] = makeEmptyNode();
-        showGhost(board.draggedObject, e);
-        board.drawBoard();
+        if (e.pointerType !== "mouse" && !roundOver) {
+            e.preventDefault();
+            selectOnTouch(e, () => {
+                renderSummary(board.grid[cell.x][cell.y]);
+                setPreview(cell);
+            }, ev => startDragFromBoard(ev, cell));
+            return;
+        }
+        startDragFromBoard(e, cell);
+    } else if (cell != null) {   // a locked piece can't be dragged, but tapping it still selects it
+        renderSummary(board.grid[cell.x][cell.y]);
+        setPreview(cell);
     }
 });
 
-document.addEventListener("pointerup", e => finishDrag(e, false));
+function startDragFromBoard(e, cell) {
+    const rect = canvas.getBoundingClientRect();
+    e.preventDefault();
+    board.dragging = true;
+    board.dragSource = "board";
+    board.dragI = cell.x;
+    board.dragJ = cell.y;
+    board.dragX = e.clientX - rect.left;
+    board.dragY = e.clientY - rect.top;
+    board.draggedObject = board.grid[cell.x][cell.y];
+    board.previewCells = [];
+    board.hoverCell = null;
+    board.grid[cell.x][cell.y] = makeEmptyNode();
+    showGhost(board.draggedObject, e);
+    board.drawBoard();
+}
+
+document.addEventListener("pointerup", e => {
+    pendingTouchDrag = null;
+    finishDrag(e, false);
+});
 // A cancelled touch (system gesture, etc.) puts the piece back where it came from.
-document.addEventListener("pointercancel", e => finishDrag(e, true));
+document.addEventListener("pointercancel", e => {
+    pendingTouchDrag = null;
+    finishDrag(e, true);
+});
 
 function finishDrag(e, cancelled) {
     if (!board.dragging) return;
@@ -293,6 +331,15 @@ document.addEventListener("pointermove", e => {
         board.dragX = mouseX;
         board.dragY = mouseY;
         moveGhost(e);
+        return;
+    }
+
+    if (pendingTouchDrag) {
+        if (Math.hypot(e.clientX - pendingTouchDrag.x, e.clientY - pendingTouchDrag.y) > TOUCH_DRAG_SLOP) {
+            const {startDrag} = pendingTouchDrag;
+            pendingTouchDrag = null;
+            startDrag(e);
+        }
         return;
     }
 
