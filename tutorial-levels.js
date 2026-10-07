@@ -41,7 +41,7 @@ export const LEVELS = [
         locked: [[2, 0, "pulseLeft"], [1, 2, "receiver"]], hand: ["dive"], solution: [{x: 1, y: 0, kind: "dive"}],
     }, {
         hint: "Red pieces with an outline skip over the next tile. Put it where the yellow piece's arrow lands.",
-        help: "The skip piece jumps two cells down, over the empty cell between, onto the target.",
+        help: "The skip piece jumps two cells down, over the empty cell between, onto the target. Watch for the small dot on the target: it means a far-away piece will activate it.",
         miss: "Not yet. The skip piece has to be activated by the yellow piece first.",
         win: "Nice! A skip piece jumps over the tile in between.",
     }),
@@ -49,16 +49,16 @@ export const LEVELS = [
         locked: [[0, 2, "pusher"], [1, 0, "receiver"]], hand: ["column"], solution: [{x: 1, y: 2, kind: "column"}],
     }, {
         hint: "Purple column pieces activate their whole column. Put it where the yellow piece's arrow lands.",
-        help: "The column piece reaches the whole column, near or far, so it can activate the target two cells away.",
+        help: "The column piece reaches the whole column, near or far, so it can activate the target two cells away. Watch for the small dot on the target: it means a far-away piece will activate it.",
         miss: "Not yet. The column piece has to be activated by the yellow piece, in the target's column.",
         win: "Nice! A column piece reaches every cell in its column.",
     }),
     level("Dots", {
         locked: [[0, 1, "pulseUp"], [0, 2, "receiver"]], hand: ["dive"], solution: [{x: 0, y: 0, kind: "dive"}],
     }, {
-        hint: "Place the skip piece and look for the dot, then press Run.",
-        help: "A dot on a piece means another piece will activate it from afar. The dot's color is the piece that will do it. The dots menu can show dots for every piece, or none.",
-        miss: "Not yet. Put the skip piece where the yellow piece's arrow lands.",
-        win: "You're ready! Drag the pieces onto the board and press Run.",
+        hint: "A small dot on a piece means a far-away piece will activate it. Place the skip piece and the dot appears on the teal target.",
+        help: "A small dot on a piece means another piece far away will activate it. Dots only show for far hits, like skip and column pieces, not for neighbours. The dot's color is the color of the piece that will activate it. The dots button on the play page can show dots for all pieces or none.",
+        miss: "Not yet. Put the skip piece where the yellow piece's arrow lands. The dot on the teal target shows it will be activated from afar.",
+        win: "You're ready! A dot means a far-away piece will activate that piece, and its color tells you which. Use the dots button to show all dots or none.",
     }),
 ];

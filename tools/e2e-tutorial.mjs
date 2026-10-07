@@ -1,7 +1,7 @@
 // End-to-end check of the guided tutorial, driving headless Chrome over the DevTools
 // protocol (no libraries; needs Node 22+). First visit auto-opens it; every one of the
 // seven lessons is checked (hint text, skipping, a miss, the two hint taps, then solved by
-// dragging real pieces with real mouse events); then Done, reopening, and a phone width.
+// dragging real pieces with real mouse events); then the main button turning into Next/Done after a win, reopening, and a phone width.
 //
 //   npm start                          (serves the project at http://localhost:3000)
 //   node tools/e2e-tutorial.mjs
@@ -109,6 +109,7 @@ try {
     const handCount = () => evaluate(`document.querySelectorAll("#tutorial-hand .pool-node").length`);
     const dotWon = i => evaluate(`document.querySelectorAll(".tutorial-dot")[${i}].classList.contains("won")`);
     const closed = () => evaluate(`document.getElementById("tutorial").hidden`);
+    const runLabel = () => evaluate(`document.querySelector("#tutorial-run-label").textContent`);
     const run = async () => {
         await click("#tutorial-run");
         await sleep(300);
@@ -156,6 +157,7 @@ try {
             check(await hint() === L.miss, `level ${n}: a miss shows the miss text`);
             check(await handCount() === before, `level ${n}: layout unchanged after a miss`);
             check(await card("dataset.state") === "idle", `level ${n}: idle again after a miss`);
+            check(await runLabel() === "Run", `level ${n}: main button stays Run after a miss`);
         }
 
         await click("#tutorial-hint-button");
@@ -173,11 +175,12 @@ try {
         await run();
         check(await hint() === L.win, `level ${n}: win text after solving`);
         check(await dotWon(i), `level ${n}: step dot marked won`);
+        check(await runLabel() === (n === LEVELS.length ? "Done" : "Next"), `level ${n}: main button reads Next/Done after a win`);
     }
 
     // 3. Done closes; reopen starts at level 1
-    check(await evaluate(`document.getElementById("tutorial-next-label").textContent`) === "Done", "level 7: Next reads Done");
-    await click("#tutorial-next");
+    check(await runLabel() === "Done", "level 7: the main button reads Done after winning");
+    await click("#tutorial-run");
     check(await closed(), "Done closes the tutorial");
     await click("#help-button");
     check(!await closed() && await level() === 1, "the ? button reopens at level 1");

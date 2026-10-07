@@ -78,16 +78,13 @@
         <div id="tutorial-hand" aria-label="Your hand"></div>
         <div class="tutorial-actions">
             <button id="tutorial-hint-button" class="up pill"><span>Hint</span></button>
-            <button id="tutorial-run" class="up btn fill"><span>Run</span></button>
+            <button id="tutorial-run" class="up btn fill"><span id="tutorial-run-label">Run</span></button>
         </div>
         <div class="tutorial-footer">
+            <button id="tutorial-back" class="up pill tutorial-arrow" aria-label="Back" data-tip="Back"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <div id="tutorial-dots" aria-hidden="true"></div>
-            <div class="tutorial-buttons">
-                <button id="tutorial-back" class="up pill"><span>Back</span></button>
-                <button id="tutorial-next" class="up pill"><span id="tutorial-next-label">Next</span></button>
-            </div>
+            <button id="tutorial-next" class="up pill tutorial-arrow" aria-label="Next" data-tip="Next"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </div>
-        <button id="tutorial-skip" class="tutorial-skip">Skip tutorial</button>
     </div>
 </div>
 <script type="module" src="game.js"></script>

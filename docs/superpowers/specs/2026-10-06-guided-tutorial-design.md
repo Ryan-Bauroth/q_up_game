@@ -9,13 +9,13 @@
 ## Decisions (from the brainstorm)
 - **Playable inside the pop-up card**, not on the real play page and not on a separate page.
 - **Own small controller.** The real game's drag, drop and Run logic lives inline in `game.js`, so the tutorial gets a lean controller of its own that reuses the real `Board`, `simulate` and `playRun`. `game.js` is not refactored.
-- **Nothing is locked.** Next is always available, so a player can skip any level or the whole tutorial. A **Hint button is always there**: its first tap gives the level's extra hint, its second tap shows where the answer goes.
+- **Nothing is locked.** Next is always available, so a player can skip any level or the whole tutorial (the close button leaves; there is no separate Skip button). A **Hint button is always there**: its first tap gives the level's extra hint, its second tap shows where the answer goes.
 - **Super easy levels.** Every level has 2 or 3 pieces at most in total (locked pieces plus hand pieces), so each can be solved at a glance.
 - **No separate piece-guide page.** Each new piece is named in the hint when it first appears.
 - It still opens by itself on a first visit and from the `?` button. The "seen" flag is unchanged.
 
 ## 1. The card
-- Heading (Caveat Brush), a one-line hint (Patrick Hand), a 3x3 board on a recessed "screen", the hand tray, a Run button, step dots, and Back / Next.
+- Heading (Caveat Brush), a one-line hint (Patrick Hand), a 3x3 board on a recessed "screen", the hand tray, a Run button, step dots, and a footer of centered step dots with a small round arrow button on each side (Back left, Next right).
 - Styled with the site's `.up` wobble pills and `.box`es and the paper background. The ink rules apply: never set `textContent` or `innerHTML` on an existing `.up` element (its `.line` layer must survive); put changing text in an inner span.
 - Phone width: the card fits with a 16px gutter and no horizontal scroll; the board scales down.
 
@@ -29,14 +29,14 @@ Each level is a normal puzzle definition (`{name, size: 3, locked, hand, solutio
 4. **Numbers.** A target that needs 2 activations. Teaches that a number is how many activations a piece still needs.
 5. **Skip piece.** A target one cell beyond a neighbor: a skip piece jumps over the next tile. Names the skip piece.
 6. **Column piece.** A target reached along its whole column by a column piece. Names the column piece.
-7. **Dots.** A level where a dot appears on the target. Explains that a dot means another piece will activate it from afar, that the dot's color is the activating piece, and that the dots menu can show all or none. Ends with "Ready? Press Run" and "Done".
+7. **Dots.** A level where a dot appears on the target. Explains that a dot means another piece will activate it from afar, that the dot's color is the activating piece, and that the dots menu can show all or none. Dots show only for far hits (skip and column pieces), not neighbours; levels 5 and 6 mention the dot too.
 
 ## 3. The controller (`tutorial.js`)
 - Builds the level from its definition with `buildFromDefinition`, draws it with `Board` (3x3, a smaller canvas) and the hand as small canvases.
 - Drag from the hand to an empty cell; drop on a placed piece to swap; drag off the board to take back; locked pieces cannot move (the same rules as `rules.js`: `applyDrop`, `canDrag`, `canDrop`).
-- Run: `simulate` on a clone of the grid, then `playRun`. A win shows a short "Nice!" and unlocks Next. A miss restores the player's layout and changes the hint line to something specific (for example "That target still needs 1 more").
+- Run: `simulate` on a clone of the grid, then `playRun`. A win shows a short "Nice!" and the Run button turns into Next ("Done" on the last level); clicking it moves on (or closes). A miss leaves it as Run, and touching a piece after a win puts it back to Run. A miss restores the player's layout and changes the hint line to something specific (for example "That target still needs 1 more").
 - The Hint button is always shown. First tap: the level's extra hint. Second tap: the answer pieces are shown faintly on their cells, still for the player to place.
-- Back and Next always work (Next reads "Done" on the last level). The step dots show progress, filled for won levels. Escape and the close button leave; Tab stays inside the card.
+- The round Back and Next arrows always work (Back is disabled only on level 1; the right arrow closes on the last level, with the label "Done"). The step dots show progress, filled for won levels. Escape and the close button leave; Tab stays inside the card.
 - Keyboard: Escape closes, Tab stays inside the card (as today). Left and right arrow keys are not needed.
 
 ## 4. Testing

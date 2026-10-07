@@ -12,7 +12,7 @@ import {hintLine, answerShown, answerCells} from "./tutorial-model.js";
 // its own small controller (drag, drop, Run) on top of the real Board,
 // simulate and playRun; game.js is not involved beyond opening it.
 //
-// Nothing is locked: Back and Next always work, and the Hint button is always
+// Nothing is locked: the arrows always work (after a win the Run button reads Next / Done), and the Hint button is always
 // there (first tap: the level's help text; second tap: the answer drawn faintly
 // on its cell, for the player to place).
 
@@ -51,12 +51,11 @@ export function initTutorial(openButton) {
     const handEl = document.getElementById("tutorial-hand");
     const hintButton = document.getElementById("tutorial-hint-button");
     const runButton = document.getElementById("tutorial-run");
+    const runLabel = document.getElementById("tutorial-run-label");
     const dots = document.getElementById("tutorial-dots");
     const backButton = document.getElementById("tutorial-back");
     const nextButton = document.getElementById("tutorial-next");
-    const nextLabel = document.getElementById("tutorial-next-label");
     const closeButton = document.getElementById("tutorial-close");
-    const skipButton = document.getElementById("tutorial-skip");
 
     canvas.width = canvas.height = BOARD_PIXELS;
     const board = new TutorialBoard(canvas, BOARD_PIXELS, SIZE);
@@ -79,6 +78,7 @@ export function initTutorial(openButton) {
     const slotOf = new Map();      // piece id -> its hand slot, so slots stay in place
     let preRunGrid = null;         // the player's layout while a finished run is on screen
     let running = false;
+    let advance = false;           // the main button currently reads Next / Done
     let runId = 0;                 // bumped when the level changes, so a stale run is ignored
     let returnFocus = null;
 
@@ -149,7 +149,12 @@ export function initTutorial(openButton) {
 
     function renderButtons() {
         backButton.disabled = index === 0;
-        nextLabel.textContent = index === LEVELS.length - 1 ? "Done" : "Next";
+        const last = index === LEVELS.length - 1;
+        nextButton.setAttribute("aria-label", last ? "Done" : "Next");
+        nextButton.dataset.tip = last ? "Done" : "Next";
+        // after a win the main button moves on; touching a piece puts it back to Run
+        advance = won.has(index) && preRunGrid !== null && !running;
+        runLabel.textContent = advance ? (last ? "Done" : "Next") : "Run";
         runButton.disabled = running;
         card.dataset.state = running ? "running" : "idle";
     }
@@ -190,10 +195,15 @@ export function initTutorial(openButton) {
         board.grid = preRunGrid;
         preRunGrid = null;
         board.effects = Board.emptyEffects();
+        renderButtons();
     }
 
     async function run() {
         if (running) return;
+        if (advance) {
+            next();
+            return;
+        }
         restoreLayout();
         running = true;
         const myRun = runId;
@@ -375,7 +385,7 @@ export function initTutorial(openButton) {
         won = new Set();
         overlay.hidden = false;
         loadLevel(0);
-        nextButton.focus();
+        runButton.focus();
     }
 
     function close() {
@@ -397,7 +407,6 @@ export function initTutorial(openButton) {
 
     openButton.addEventListener("click", open);
     closeButton.addEventListener("click", close);
-    skipButton.addEventListener("click", close);
     nextButton.addEventListener("click", next);
     backButton.addEventListener("click", back);
     runButton.addEventListener("click", run);

@@ -389,10 +389,9 @@ body.play .tutorial-actions .btn {
 body.play .tutorial-footer {
     align-self: stretch;
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px 10px;
+    justify-content: center;
+    gap: 16px;
     margin-top: 22px;
 }
 
@@ -424,43 +423,22 @@ body.play .tutorial-dot.won.current {
     border-color: var(--ink);
 }
 
-body.play .tutorial-buttons {
-    display: flex;
-    gap: 12px;
-    margin-left: auto;
-}
-
-body.play .tutorial-buttons .pill {
-    font-size: 18px;
-    padding: 4px 14px 5px;
+body.play .tutorial-arrow {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    --sx: 2px;
+    --sy: 3px;
 }
 
 body.play .tutorial-card .pill:disabled {
     cursor: default;
     opacity: 0.4;
-}
-
-body.play .tutorial-skip {
-    margin-top: 12px;
-    padding: 4px 8px;
-    border: 0;
-    background: none;
-    font: inherit;
-    font-size: 16px;
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    opacity: 0.65;
-    cursor: pointer;
-}
-
-body.play .tutorial-skip:hover {
-    opacity: 1;
-}
-
-body.play .tutorial-skip:focus-visible {
-    outline: 3px solid var(--coral);
-    outline-offset: 2px;
 }
 
 #tutorial-ghost {
