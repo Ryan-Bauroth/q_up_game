@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Every pre-built daily puzzle has a verified, complete list of ways to solve it (three, using different numbers of pieces; two for 3x3), the game tracks every different way a player finds, prompts about cheaper ways after a solve, and the home card shows the player's fewest-piece solution.
+**Goal:** Every pre-built daily puzzle has a verified, complete list of ways to solve it (two or three, using different numbers of pieces, for every size), the game tracks every different way a player finds, prompts about cheaper ways after a solve, and the home card shows the player's fewest-piece solution.
 
 **Architecture:** A complete solver (`solutions.js`) finds every solution of a puzzle, where a solution is a set of hand pieces in which every piece is needed. A build script (`tools/build-dailies.mjs`) uses it, offline and in parallel, to find seeded puzzles with exactly the wanted solutions and writes them to `dailies.json`. The game loads that file (`daily-data.js`), falling back to the live seeded daily when a date is missing. Progress keeps every way found, by piece count. Unlimited mode is untouched.
 

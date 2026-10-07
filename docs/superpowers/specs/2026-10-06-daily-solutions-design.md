@@ -1,14 +1,14 @@
 # Daily solutions: three ways to solve each daily
 
 ## Goals
-- Every pre-built daily puzzle has a complete, verified list of its solutions: three of them, using different numbers of pieces. 3x3 needs only two.
+- Every pre-built daily puzzle has a complete, verified list of its solutions: two or three of them, using different numbers of pieces (every size).
 - The **main** solution is the easiest to see and uses every piece in the hand. The others are cleverer and use fewer pieces.
 - The game keeps track of every different way a player finds, and the home card shows the way that used the fewest pieces.
 - Unlimited mode does not change (no solution count, no solver).
 
 ## Decisions (from the brainstorm)
 - **Pre-built dailies, live unlimited.** A script on the developer's computer builds `dailies.json`. If a date is not in the file (the list ran out, or the file did not load) the game falls back to today's live seeded random daily and ignores the extra-solutions requirement: no list of ways, no cheaper-ways prompt.
-- **3x3 daily: two solutions.** 5x5 and 7x7: three.
+- **Every size: two or three solutions.** A puzzle with more than three is not used, so the list is always complete.
 - **The list of solutions is exact and complete.** No player may ever find a way that is better than the list. So the solver has no limits where it matters: the build script fully solves every candidate and drops any it cannot finish in time (it is never allowed to store a partial list). A test proves the solver finds exactly the same solutions as an exhaustive search.
 - **Daily flow:** no hints before solving. After a solve, the game says how many pieces the player needed and, if cheaper ways exist, nudges toward them without saying how many pieces they use.
 - Unlimited puzzles never show a solution count.
@@ -25,7 +25,7 @@
 - Tests: known tiny puzzles; no solution contains an unneeded piece; the stored main solution is always found; limits; and the solver equals an exhaustive search on 3x3 (with and without spares) and small 5x5 puzzles. (A one-off run of this comparison over 5,650 puzzles and 33,464 solutions found no differences.)
 
 ## 3. Building the dailies (`tools/`)
-- `buildDaily(date, size, {maxCandidates, perCandidateMs})` (`tools/daily-builder.js`) tries seeded candidates (seed from the date, size and a counter) from `generateDefinition({size, rng, spares: 0})`, so the hand is exactly the main solution. It fully solves each (stopping early once it has more solutions than wanted, or runs out of time) and accepts one with exactly the wanted number of solutions (2 for 3x3, else 3) using all different piece counts. It returns `{date, size, attempt, definition, solutions}` or null. The same inputs always give the same puzzle.
+- `buildDaily(date, size, {maxCandidates, perCandidateMs})` (`tools/daily-builder.js`) tries seeded candidates (seed from the date, size and a counter) from `generateDefinition({size, rng, spares: 0})`, so the hand is exactly the main solution. It fully solves each (stopping early once it has more solutions than wanted, or runs out of time) and accepts one with a complete list of 2 or 3 solutions (every size) using all different piece counts. It returns `{date, size, attempt, definition, solutions}` or null. The same inputs always give the same puzzle.
 - `generateDefinition` gets two options: `spares` (fix the number of spare pieces; 0 means none) and `config` (override the size's recipe for one call). Without them its output is exactly as before, so the pinned live daily puzzles do not change.
 - `tools/build-dailies.mjs` (with a worker file) runs it for a range of dates and sizes on several worker threads and writes `dailies.json`:
   `node tools/build-dailies.mjs [--from YYYY-MM-DD] [--days 30] [--sizes 3,5,7] [--out dailies.json] [--workers N] [--cap-seconds 60] [--max-candidates 20000]`.
