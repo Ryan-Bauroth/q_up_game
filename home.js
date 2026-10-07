@@ -20,28 +20,32 @@ function element(tag, className, text) {
     return el;
 }
 
-// Hand-drawn flames for the streak tag to sit on: four ink-outlined tongues, each
-// with a yellow core, flickering in steps like the rest of the ink look.
-const FLAME_XS = [14, 38, 62, 86];
-function flames() {
-    const tongues = FLAME_XS.map((x, i) =>
-        `<g class="flame f${i + 1}">` +
-        `<path class="outer" d="M${x} 40 C${x - 11} 33 ${x - 9} 19 ${x} 3 C${x + 3} 15 ${x + 13} 22 ${x + 10} 32 C${x + 9} 38 ${x + 5} 40 ${x} 40Z"/>` +
-        `<path class="core" d="M${x} 40 C${x - 5} 36 ${x - 4} 28 ${x} 18 C${x + 2} 25 ${x + 6} 30 ${x + 4} 36 C${x + 3} 39 ${x + 2} 40 ${x} 40Z"/>` +
-        `</g>`).join("");
-    const layer = element("span", "flames wob");
+// One hand-drawn flame for the streak numeral to sit inside: an ink-outlined
+// coral flame with an orange middle and a yellow core, and a hard ink shadow like
+// the rest of the ink look. It sways in steps, layer by layer.
+const FLAME = {
+    outer: "M32 3 C34 16 52 26 56 46 C60 64 48 76 32 76 C16 76 4 64 8 46 C10 36 16 30 20 22 C22 30 26 30 27 24 C28 16 30 10 32 3 Z",
+    middle: "M32 20 C34 30 46 38 48 52 C50 64 42 72 32 72 C22 72 14 64 16 52 C17 44 22 40 25 34 C27 40 30 38 30 32 C30 28 31 24 32 20 Z",
+    core: "M32 40 C33 46 42 52 42 60 C42 68 38 71 32 71 C26 71 22 68 22 60 C22 52 29 48 32 40 Z",
+};
+function flame() {
+    const layer = element("span", "flame wob");
     layer.setAttribute("aria-hidden", "true");
-    layer.innerHTML = `<svg viewBox="0 0 100 40" preserveAspectRatio="none" focusable="false">${tongues}</svg>`;
+    layer.innerHTML = `<svg viewBox="0 0 64 78" preserveAspectRatio="none" focusable="false">` +
+        `<path class="shadow" d="${FLAME.outer}" transform="translate(3 4)"/>` +
+        `<path class="outer" d="${FLAME.outer}"/>` +
+        `<path class="middle" d="${FLAME.middle}"/>` +
+        `<path class="core" d="${FLAME.core}"/></svg>`;
     return layer;
 }
 
-// The streak tag: the streak as a Roman numeral on a bed of flames (the plain
-// words, without flames, if there is none yet).
+// The streak tag: the streak as a Roman numeral engulfed in a flame (the plain
+// words, on a plain tag, if there is none yet).
 function streakTag(card) {
     const tag = element("div", card.roman ? "up tag streak has-roman" : "up tag streak");
     tag.setAttribute("role", "img");
     tag.setAttribute("aria-label", `streak: ${card.streakText}`);
-    if (card.roman) tag.append(flames(), element("span", "num", card.roman));
+    if (card.roman) tag.append(flame(), element("span", "num", card.roman));
     else tag.textContent = card.streakText;
     return tag;
 }

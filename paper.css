@@ -274,72 +274,74 @@ body.home .cards {
     letter-spacing: 1px;
 }
 
-/* a streak sits on a bed of flames: ink-outlined tongues that flicker in steps */
-.tag.streak .flames {
+/* a streak is one flame with the numeral inside it: no pill, just the flame */
+.tag.streak.has-roman {
+    top: -62px;
+    right: -8px;
+    min-width: 78px;
+    height: 98px;
+    padding: 0 18px 18px;
+    box-sizing: border-box;
+    justify-content: center;
+    align-items: flex-end;
+    transform: rotate(2deg);
+}
+
+.tag.streak.has-roman > .line {
+    display: none;
+}
+
+.tag.streak .flame {
     position: absolute;
-    inset: 3px;
+    inset: 0;
     z-index: 0;
-    overflow: hidden;
-    border-radius: 12px 17px 11px 18px / 16px 11px 18px 12px;
     pointer-events: none;
 }
 
-.tag.streak .flames svg {
+.tag.streak .flame svg {
     display: block;
     width: 100%;
     height: 100%;
+    overflow: visible;
 }
 
-.tag.streak.has-roman {
-    min-width: 70px;
-    min-height: 42px;
-    justify-content: center;
-}
-
-/* the numeral sits above the flames, with a light edge so it stays readable */
 .tag.streak .num {
     position: relative;
     z-index: 1;
-    -webkit-text-stroke: 4px var(--white);
-    paint-order: stroke fill;
-    text-shadow: 0 0 5px var(--white), 0 0 3px var(--white);
+    font-size: 36px;
+    line-height: 1;
 }
 
-.flame {
+.flame path {
+    stroke: var(--ink);
+    stroke-linejoin: round;
+    stroke-width: 2.4;
+    vector-effect: non-scaling-stroke;
+}
+
+.flame .shadow { fill: var(--ink); }
+.flame .outer { fill: var(--coral); }
+.flame .middle { fill: #ec8a3b; stroke-width: 0; }
+.flame .core { fill: #f6c453; stroke-width: 0; }
+
+.flame .outer, .flame .middle, .flame .core {
     transform-box: fill-box;
     transform-origin: 50% 100%;
     animation: flicker 0.84s steps(1) infinite;
 }
 
-.flame.f2 { animation-delay: -0.28s; }
-.flame.f3 { animation-delay: -0.56s; }
-.flame.f4 { animation-delay: -0.14s; }
-
-.flame .outer {
-    fill: var(--coral);
-    stroke: var(--ink);
-    stroke-width: 1.6;
-    stroke-linejoin: round;
-    vector-effect: non-scaling-stroke;
-}
-
-.flame .core {
-    fill: #f6c453;
-}
-
-.flame.f2 .outer, .flame.f4 .outer {
-    fill: #ec8a3b;
-}
+.flame .middle { animation-delay: -0.28s; }
+.flame .core { animation-delay: -0.56s; }
 
 @keyframes flicker {
     0% { transform: scale(1, 1) skewX(0deg); }
-    33.4% { transform: scale(0.94, 0.82) skewX(-5deg); }
-    66.8% { transform: scale(1.04, 1.1) skewX(4deg); }
+    33.4% { transform: scale(0.96, 0.9) skewX(-3deg); }
+    66.8% { transform: scale(1.03, 1.05) skewX(3deg); }
     100% { transform: scale(1, 1) skewX(0deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .flame { animation: none; }
+    .flame .outer, .flame .middle, .flame .core { animation: none; }
 }
 
 .card .btns {
