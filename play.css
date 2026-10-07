@@ -200,3 +200,44 @@ body.play .speed-button:focus-visible {
         max-width: 420px;
     }
 }
+
+/* ---------- ways to solve the daily ---------- */
+
+body.play #result-text {
+    white-space: pre-line;   /* a win can say several things, one per line */
+}
+
+body.play #ways-box {
+    margin: 0 6px 6px 0;
+}
+
+body.play #ways {
+    padding: 12px 16px;
+    font-size: 18px;
+}
+
+body.play .ways-title {
+    margin-bottom: 6px;
+}
+
+body.play .ways-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+body.play .ways-list li {
+    padding: 2px 10px;
+    border: 2px dashed var(--ink);
+    border-radius: 12px 16px 11px 17px / 16px 11px 17px 12px;
+    opacity: 0.6;
+}
+
+body.play .ways-list li.found {
+    border-style: solid;
+    color: var(--green);
+    opacity: 1;
+}

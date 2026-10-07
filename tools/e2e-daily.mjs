@@ -10,11 +10,12 @@
 // QUP_DEBUG_PORT (default 9333). Screenshots are written to a temp folder that
 // is printed at the end.
 import {spawn} from "node:child_process";
-import {mkdtempSync, rmSync, writeFileSync} from "node:fs";
+import {mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync} from "node:fs";
 import {tmpdir} from "node:os";
-import {join} from "node:path";
+import {join, dirname} from "node:path";
+import {fileURLToPath} from "node:url";
 
-import {dailyDefinition} from "../daily.js";
+import {getDaily} from "../daily-data.js";
 import {easternDateString} from "../dates.js";
 import {Board} from "../board.js";
 import {CANVAS_SIZES} from "../play-model.js";
@@ -26,7 +27,11 @@ const CHROME = process.env.CHROME ?? "/Applications/Google Chrome.app/Contents/M
 const outDir = mkdtempSync(join(tmpdir(), "qup-e2e-"));
 
 const today = easternDateString();
-const definition = dailyDefinition(today, size);
+// the pre-built puzzle for today if dailies.json has it (with every way to solve it), else the live one
+const dailiesPath = join(dirname(fileURLToPath(import.meta.url)), "..", "dailies.json");
+const daily = getDaily(existsSync(dailiesPath) ? JSON.parse(readFileSync(dailiesPath, "utf8")) : null, today, size);
+const definition = daily.definition;
+const ways = daily.solutions;   // largest first, or null when today's puzzle was generated live
 
 const chrome = spawn(CHROME, [
     "--headless=new", "--disable-gpu", `--remote-debugging-port=${port}`, `--user-data-dir=${join(outDir, "profile")}`,
@@ -91,7 +96,7 @@ try {
 
     await send("Page.enable");
     await send("Runtime.enable");
-    console.log(`today (Eastern): ${today}; ${size}x${size} daily has ${definition.solution.length} pieces to place`);
+    console.log(`today (Eastern): ${today}; ${size}x${size} daily has ${definition.solution.length} pieces in the main solution; ways: ${ways ? ways.map(w => w.length).join("/") : "unknown (live puzzle)"}`);
 
     // ---- start from a clean slate, with the tutorial marked as seen
     await go(`${BASE}/index.html`);
@@ -99,13 +104,14 @@ try {
     await go(`${BASE}/play.html?size=${size}&mode=daily`);
     await evaluate(`document.querySelector('[data-speed="1000"]').click()`);   // instant animation
 
-    async function placeSolution() {
+    // Drags a layout (a list of {x, y, kind}) from the hand onto the board.
+    async function placeLayout(layout) {
         const boardSize = CANVAS_SIZES[size];
         const gridSize = (boardSize - Board.OUTLINE_STROKE - size * Board.GRID_STROKE) / size;
         const canvas = JSON.parse(await evaluate(`JSON.stringify(document.getElementById("canvas").getBoundingClientRect())`));
-        // which hand tile each solution piece comes from (same matching as Show Solution)
+        // which hand tile each piece comes from (the hand starts in definition.hand order)
         const used = new Set();
-        const placements = definition.solution.map(({x, y, kind}) => {
+        const placements = layout.map(({x, y, kind}) => {
             const index = definition.hand.findIndex((k, i) => k === kind && !used.has(i));
             used.add(index);
             return {x, y, index};
@@ -125,31 +131,73 @@ try {
             await sleep(150);
         }
     }
+    const placeSolution = () => placeLayout(definition.solution);   // the main way: every hand piece
+    // Solve, then "Keep going" and clear the board, ready to try a different way.
+    const runAndWait = async () => {
+        await evaluate(`document.getElementById("run-button").click()`);
+        await sleep(1500);
+    };
+    const startOver = async () => {
+        await evaluate(`document.getElementById("run-button").click()`);   // "Keep going" restores the layout
+        await sleep(300);
+        await evaluate(`document.getElementById("clear-button").click()`);
+        await sleep(300);
+    };
 
     const banner = () => evaluate(`document.getElementById("result-banner").classList.contains("hidden") ? "(hidden)" : document.getElementById("result-text").textContent`);
     const runLabel = () => evaluate(`document.getElementById("run-label").textContent`);
     const progress = () => evaluate(`localStorage.getItem("qup-progress-v1")`);
 
-    // ---- 1. first win
+    const piecesWord = n => `${n} ${n === 1 ? "piece" : "pieces"}`;
+    const waysText = () => evaluate(`document.getElementById("ways-box").hidden ? "(hidden)" : document.getElementById("ways").innerText`);
+    const mainCount = definition.solution.length;
+    const cheaper = ways ? ways.slice(1) : [];   // the clever ways, largest first
+
+    // ---- 1. first win, with the main way (every piece)
     await placeSolution();
     await shot("1-placed");
-    await evaluate(`document.getElementById("run-button").click()`);
-    await sleep(1500);
+    await runAndWait();
     const firstBanner = await banner();
-    console.log("first run banner:", firstBanner, "| run button:", await runLabel());
+    console.log("first run banner:", JSON.stringify(firstBanner), "| run button:", await runLabel());
     console.log("saved progress:", await progress());
-    check(/^Solved! Streak: 1 day/.test(firstBanner), `first-run banner was "${firstBanner}"`);
+    check(firstBanner.startsWith("Solved! Streak: 1 day"), `first-run banner was "${firstBanner}"`);
+    if (ways) {
+        check(firstBanner.includes(`Used ${piecesWord(mainCount)}.`), `banner did not say ${mainCount} pieces: "${firstBanner}"`);
+        check(/ways? exists?: try for fewer pieces\./.test(firstBanner), `banner did not say cheaper ways exist: "${firstBanner}"`);
+        const text = await waysText();
+        console.log("ways box:", JSON.stringify(text));
+        check(text.includes(`1 of ${ways.length} found`), `ways box was "${text}"`);
+        check(text.includes(piecesWord(mainCount)), `ways box did not list the ${mainCount}-piece way: "${text}"`);
+    }
     await shot("2-solved");
 
-    // ---- 2. keep going and win again: no change to the streak
-    await evaluate(`document.getElementById("run-button").click()`);   // "Keep going" restores the layout
-    await sleep(300);
-    await evaluate(`document.getElementById("run-button").click()`);   // Run again
-    await sleep(1500);
+    // ---- 2. the same way again changes nothing; then the cheaper ways are found one by one
+    await startOver();
+    await placeSolution();
+    await runAndWait();
     const secondBanner = await banner();
     const savedBeforeReplay = await progress();
-    console.log("second win banner:", secondBanner, "| saved progress:", savedBeforeReplay);
-    check(secondBanner === "Solved again!", `second-win banner was "${secondBanner}"`);
+    console.log("same way again:", JSON.stringify(secondBanner));
+    check(secondBanner.startsWith("Solved again!"), `second-win banner was "${secondBanner}"`);
+    for (const [i, layout] of cheaper.entries()) {
+        await startOver();
+        await placeLayout(layout);
+        await runAndWait();
+        const text = await banner();
+        console.log(`a cheaper way (${layout.length} pieces):`, JSON.stringify(text));
+        check(text.startsWith("A new way to solve it!"), `a new way's banner was "${text}"`);
+        check(text.includes(`Used ${piecesWord(layout.length)}.`), `banner did not say ${layout.length} pieces: "${text}"`);
+        if (i === cheaper.length - 1) check(text.includes("You found every way!"), `banner did not say every way was found: "${text}"`);
+    }
+    const savedAfterWays = await progress();
+    console.log("saved progress after finding the ways:", savedAfterWays);
+    if (ways) {
+        const saved = JSON.parse(savedAfterWays)[size];
+        check(saved.streak === 1, `finding more ways changed the streak: ${savedAfterWays}`);
+        check(JSON.stringify(Object.keys(saved.solutions).map(Number).sort((a, b) => a - b)) === JSON.stringify(ways.map(w => w.length).sort((a, b) => a - b)),
+            `saved solutions should be one per way: ${savedAfterWays}`);
+        check((await waysText()).includes(`${ways.length} of ${ways.length} found`), `ways box was "${await waysText()}"`);
+    }
 
     // ---- 3. home page now shows DONE and a streak
     await go(`${BASE}/index.html`);
@@ -160,7 +208,11 @@ try {
     const finished = JSON.parse(await evaluate(`JSON.stringify([...document.querySelectorAll('.card[data-done="true"]')].map(el => [el.dataset.size, el.dataset.placed]))`));
     console.log("finished cards (size, pieces of your solution shown):", JSON.stringify(finished));
     check(finished.length === 1 && finished[0][0] === String(size), `expected one finished ${size}x${size} card, found ${JSON.stringify(finished)}`);
-    check(finished.length === 1 && Number(finished[0][1]) === definition.solution.length, `the card should show your ${definition.solution.length} placed pieces, shows ${finished[0]?.[1]}`);
+    const cheapestCount = ways ? ways[ways.length - 1].length : mainCount;
+    check(finished.length === 1 && Number(finished[0][1]) === cheapestCount, `the card should show your cheapest solution (${cheapestCount} pieces), shows ${finished[0]?.[1]}`);
+    const captions = JSON.parse(await evaluate(`JSON.stringify([...document.querySelectorAll('.card[data-done="true"] .sub')].map(el => el.textContent))`));
+    console.log("finished card caption:", JSON.stringify(captions));
+    check(captions.length === 1 && captions[0].includes(piecesWord(cheapestCount)), `the caption should say ${piecesWord(cheapestCount)}: ${JSON.stringify(captions)}`);
     check(await evaluate(`document.querySelectorAll(".card .stamp").length`) === 0, "the DONE stamp should be gone");
     // cards are in size order 3, 5, 7
     const expectedLabels = [3, 5, 7].map(n => n === size ? "Review" : "Play");
@@ -168,15 +220,16 @@ try {
 
     // ---- 4. replay the finished daily: the banner says "again", the streak is untouched
     await go(`${BASE}/play.html?size=${size}&mode=daily`);
+    if (ways) check((await waysText()).includes(`${ways.length} of ${ways.length} found`), `a finished daily should show its ways when it opens, got "${await waysText()}"`);
     await evaluate(`document.querySelector('[data-speed="1000"]').click()`);
     await placeSolution();
     await evaluate(`document.getElementById("run-button").click()`);
     await sleep(1500);
     const replayBanner = await banner();
     const savedAfterReplay = await progress();
-    console.log("replay banner:", replayBanner, "| saved progress:", savedAfterReplay);
-    check(replayBanner === "Solved again!", `replay banner was "${replayBanner}"`);
-    check(savedAfterReplay === savedBeforeReplay, `progress changed on replay: ${savedBeforeReplay} -> ${savedAfterReplay}`);
+    console.log("replay banner:", JSON.stringify(replayBanner), "| saved progress:", savedAfterReplay);
+    check(replayBanner.startsWith("Solved again!"), `replay banner was "${replayBanner}"`);
+    check(savedAfterReplay === savedAfterWays, `progress changed on replay: ${savedAfterWays} -> ${savedAfterReplay}`);
 
     // ---- 5. a look at every page, for a human to check
     for (const [name, url] of [

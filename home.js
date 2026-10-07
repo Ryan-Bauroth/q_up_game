@@ -1,5 +1,5 @@
 import {easternDateString, msUntilNextEasternMidnight, formatCountdown} from "./dates.js";
-import {dailyDefinition} from "./daily.js";
+import {loadDailyFile, getDaily} from "./daily-data.js";
 import {loadProgress, browserStorage} from "./progress.js";
 import {cardModel} from "./home-model.js";
 import {buildFromDefinition, makePiece, KINDS} from "./puzzles.js";
@@ -8,6 +8,7 @@ import {SIZES} from "./generator.js";
 import {startInk} from "./ink.js";
 
 const today = easternDateString();
+const dailyFile = await loadDailyFile();   // the pre-built puzzles, if the file loads
 
 const dateText = new Intl.DateTimeFormat("en-US", {timeZone: "America/New_York", weekday: "long", month: "long", day: "numeric"});
 document.getElementById("today").textContent = dateText.format(new Date());
@@ -32,7 +33,7 @@ function streakTag(card) {
 // and targets that start on the board, plus (once the day is won) the pieces the
 // player placed, which have no padlock. Before that the hand is not shown.
 function drawPreview(canvas, size, solution) {
-    const {grid} = buildFromDefinition(dailyDefinition(today, size));
+    const {grid} = buildFromDefinition(getDaily(dailyFile, today, size).definition);
     for (const {x, y, kind} of solution) {
         if (KINDS[kind] && grid[x][y].isEmpty) grid[x][y] = makePiece(kind, 1, false, false);
     }
@@ -67,7 +68,7 @@ function buildCard(size, progress) {
     const article = element("article", "up card");
     article.dataset.size = String(size);
     article.dataset.done = String(card.done);
-    article.dataset.placed = String(card.solution.length);   // pieces of the player's solution shown
+    article.dataset.placed = String(card.solution.length);   // pieces of the player's cheapest solution shown
 
     article.appendChild(element("div", "up tag size", card.title));
     article.appendChild(streakTag(card));
@@ -92,7 +93,7 @@ function buildCard(size, progress) {
     buttons.append(play, unlimited);
     article.appendChild(buttons);
 
-    article.appendChild(element("p", "sub", card.label));
+    article.appendChild(element("p", "sub", card.pieces ? `${card.label} · ${card.pieces} ${card.pieces === 1 ? "piece" : "pieces"}` : card.label));
     return article;
 }
 

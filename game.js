@@ -8,10 +8,11 @@ import {buildFromDefinition} from "./puzzles.js";
 import {generateDefinition} from "./generator.js";
 import {initTutorial} from "./tutorial.js";
 import {canDrag, applyDrop, validatePuzzle, placedPieces} from "./rules.js";
-import {parsePlayParams, playTitle, winMessage, CANVAS_SIZES} from "./play-model.js";
+import {parsePlayParams, playTitle, winMessage, waysSummary, CANVAS_SIZES} from "./play-model.js";
 import {easternDateString} from "./dates.js";
-import {dailyDefinition} from "./daily.js";
-import {loadProgress, saveProgress, recordWin, isDone, mergeProgress, browserStorage} from "./progress.js";
+import {loadDailyFile, getDaily} from "./daily-data.js";
+import {minimalSubset} from "./solutions.js";
+import {loadProgress, saveProgress, recordWin, addSolution, foundCounts, isDone, mergeProgress, browserStorage} from "./progress.js";
 import {startInk} from "./ink.js";
 
 // Which board and which mode this page is for comes from the URL
@@ -40,8 +41,12 @@ canvas.width = canvas.height = boardSize;
 const board = new Board(canvas, boardSize, gridScale);
 
 // The puzzle being played: today's daily puzzle, or a random one in unlimited
-// mode. Clear Board rebuilds fresh pieces from this definition.
-let activeDefinition = isDaily ? dailyDefinition(today, gridScale) : generateDefinition({size: gridScale});
+// mode. Clear Board rebuilds fresh pieces from this definition. The daily comes
+// from the pre-built list when it has today (with every known way to solve it);
+// otherwise it is generated live and no list of ways is known.
+const daily = isDaily ? getDaily(await loadDailyFile(), today, gridScale) : null;
+const knownSolutions = daily?.solutions ?? null;
+let activeDefinition = daily ? daily.definition : generateDefinition({size: gridScale});
 
 document.getElementById("page-title").textContent = playTitle({size: gridScale, mode: params.mode, today});
 document.title = `qube · ${playTitle({size: gridScale, mode: params.mode, today})}`;
@@ -279,18 +284,62 @@ function setInteractive(interactive) {
 
 let progress = loadProgress(browserStorage());
 
+// The "ways to solve it" box (daily only, once there is something to say): how
+// many ways there are and which have been found.
+const waysBox = document.getElementById("ways-box");
+const waysEl = document.getElementById("ways");
+
+function showWays(ways) {
+    waysBox.hidden = !ways;
+    if (!ways) return;
+    const title = document.createElement("div");
+    title.className = "ways-title";
+    title.textContent = `Ways to solve it: ${ways.found} of ${ways.total} found`;
+    const list = document.createElement("ul");
+    list.className = "ways-list";
+    for (const item of ways.items) {
+        const entry = document.createElement("li");
+        entry.className = item.found ? "found" : "";
+        entry.textContent = item.found ? `${item.label} ✓` : item.label;
+        list.appendChild(entry);
+    }
+    waysEl.replaceChildren(title, list);
+}
+
+// A daily already solved today shows its ways when the page opens.
+if (isDaily && knownSolutions && isDone(progress, gridScale, today)) {
+    showWays(waysSummary(knownSolutions, foundCounts(progress, gridScale, today)));
+}
+
 // What a win says. The first win of a daily puzzle records the day and the
-// streak; winning it again (Keep going, or replaying a finished day) changes nothing.
+// streak; every different way found (by how many pieces it needs) is kept, but
+// solving it again the same way changes nothing.
 function winText() {
     if (!isDaily) return winMessage({daily: false});
     // work from the latest saved data, in case another tab has saved since this page loaded
     progress = mergeProgress(progress, loadProgress(browserStorage()));
     const firstWin = !isDone(progress, gridScale, today);
-    if (firstWin) {
-        progress = recordWin(progress, gridScale, today, placedPieces(preRunGrid ?? board.grid));
-        saveProgress(browserStorage(), progress);
+    // the pieces this win needed: decoys the player put down do not count
+    const used = minimalSubset(activeDefinition, placedPieces(preRunGrid ?? board.grid)) ?? [];
+    const before = foundCounts(progress, gridScale, today);
+    if (firstWin) progress = recordWin(progress, gridScale, today, used);
+    progress = addSolution(progress, gridScale, today, used);
+    saveProgress(browserStorage(), progress);
+    const ways = knownSolutions ? waysSummary(knownSolutions, foundCounts(progress, gridScale, today)) : null;
+    showWays(ways);
+    // the list of ways is complete, so nobody can beat its cheapest one: say so loudly if that ever happens
+    if (knownSolutions && used.length > 0 && used.length < Math.min(...knownSolutions.map(solution => solution.length))) {
+        console.error(`A player solved ${today} (${gridScale}x${gridScale}) with ${used.length} pieces, fewer than the known ways`, used);
     }
-    return winMessage({daily: true, firstWin, streak: progress[gridScale].streak});
+    return winMessage({
+        daily: true,
+        firstWin,
+        streak: progress[gridScale].streak,
+        pieces: used.length || undefined,
+        newWay: !before.includes(used.length),
+        cheaperLeft: ways?.cheaperLeft ?? 0,
+        allFound: ways?.allFound ?? false,
+    });
 }
 
 function showResult(won) {
