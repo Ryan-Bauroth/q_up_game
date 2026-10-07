@@ -149,6 +149,7 @@ try {
     const progress = () => evaluate(`localStorage.getItem("qup-progress-v1")`);
 
     const piecesWord = n => `${n} ${n === 1 ? "piece" : "pieces"}`;
+    const shown = id => evaluate(`getComputedStyle(document.getElementById("${id}")).display !== "none"`);
     const waysText = () => evaluate(`document.getElementById("ways-box").hidden ? "(hidden)" : document.getElementById("ways").innerText`);
     const mainCount = definition.solution.length;
     const cheaper = ways ? ways.slice(1) : [];   // the clever ways, largest first
@@ -166,13 +167,14 @@ try {
         check(/ways? exists?: try for fewer pieces\./.test(firstBanner), `banner did not say cheaper ways exist: "${firstBanner}"`);
         const text = await waysText();
         console.log("ways box:", JSON.stringify(text));
-        check(text.includes(`1 of ${ways.length} found`), `ways box was "${text}"`);
-        check(text.includes(piecesWord(mainCount)), `ways box did not list the ${mainCount}-piece way: "${text}"`);
+        check(text.includes(`1 of ${ways.length}`), `ways box was "${text}"`);
     }
+    check(await shown("summary-box") === false && await shown("result-banner") === true, "the result should replace the description");
     await shot("2-solved");
 
     // ---- 2. the same way again changes nothing; then the cheaper ways are found one by one
     await startOver();
+    check(await shown("summary-box") === true && await shown("result-banner") === false, "the description should return after Keep going");
     await placeSolution();
     await runAndWait();
     const secondBanner = await banner();
@@ -196,7 +198,7 @@ try {
         check(saved.streak === 1, `finding more ways changed the streak: ${savedAfterWays}`);
         check(JSON.stringify(Object.keys(saved.solutions).map(Number).sort((a, b) => a - b)) === JSON.stringify(ways.map(w => w.length).sort((a, b) => a - b)),
             `saved solutions should be one per way: ${savedAfterWays}`);
-        check((await waysText()).includes(`${ways.length} of ${ways.length} found`), `ways box was "${await waysText()}"`);
+        check((await waysText()).includes(`${ways.length} of ${ways.length}`), `ways box was "${await waysText()}"`);
     }
 
     // ---- 3. home page now shows DONE and a streak
@@ -220,7 +222,7 @@ try {
 
     // ---- 4. replay the finished daily: the banner says "again", the streak is untouched
     await go(`${BASE}/play.html?size=${size}&mode=daily`);
-    if (ways) check((await waysText()).includes(`${ways.length} of ${ways.length} found`), `a finished daily should show its ways when it opens, got "${await waysText()}"`);
+    if (ways) check((await waysText()).includes(`${ways.length} of ${ways.length}`), `a finished daily should show its ways when it opens, got "${await waysText()}"`);
     await evaluate(`document.querySelector('[data-speed="1000"]').click()`);
     await placeSolution();
     await evaluate(`document.getElementById("run-button").click()`);

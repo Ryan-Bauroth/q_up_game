@@ -292,18 +292,7 @@ const waysEl = document.getElementById("ways");
 function showWays(ways) {
     waysBox.hidden = !ways;
     if (!ways) return;
-    const title = document.createElement("div");
-    title.className = "ways-title";
-    title.textContent = `Ways to solve it: ${ways.found} of ${ways.total} found`;
-    const list = document.createElement("ul");
-    list.className = "ways-list";
-    for (const item of ways.items) {
-        const entry = document.createElement("li");
-        entry.className = item.found ? "found" : "";
-        entry.textContent = item.found ? `${item.label} ✓` : item.label;
-        list.appendChild(entry);
-    }
-    waysEl.replaceChildren(title, list);
+    waysEl.textContent = `Ways found: ${ways.found} of ${ways.total}`;
 }
 
 // A daily already solved today shows its ways when the page opens.
