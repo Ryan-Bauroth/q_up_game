@@ -60,3 +60,12 @@ export function validatePuzzle(grid, pool) {
         }
     }
 }
+
+// The movable pieces on the board, as [{x, y, kind}]: what the player placed.
+export function placedPieces(grid) {
+    const placed = [];
+    grid.forEach((column, x) => column.forEach((node, y) => {
+        if (!node.isEmpty && !node.locked) placed.push({x, y, kind: node.kind});
+    }));
+    return placed;
+}

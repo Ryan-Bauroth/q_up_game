@@ -54,3 +54,12 @@ test("makePiece makes a piece of a kind with the given charges", () => {
     assert.equal(piece.required, true);
     assert.deepEqual(piece.abilities, ["octoBurst"]);
 });
+
+test("a piece remembers which kind it is, and keeps it when cloned", () => {
+    const piece = makePiece("octo");
+    assert.equal(piece.kind, "octo");
+    assert.equal(piece.clone().kind, "octo");
+    const {grid, pool} = buildFromDefinition(small);
+    assert.deepEqual(pool.map(p => p.kind), ["burster", "pusher"]);
+    assert.equal(grid[0][0].kind, "igniter");
+});

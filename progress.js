@@ -8,14 +8,21 @@ const KEY = "qup-progress-v1";
 const SIZES = [3, 5, 7];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-export function recordWin(progress, size, today) {
+// `solution` is the pieces the player placed, [{x, y, kind}], kept so the home
+// page can show it. The first win of a day keeps its solution.
+export function recordWin(progress, size, today, solution = []) {
     const entry = progress[size];
     if (entry?.last === today) return progress;
     // a tab left open past midnight winning yesterday's puzzle must not reset today's streak
     if (entry && today < entry.last) return progress;
     const streak = entry?.last === addDays(today, -1) ? entry.streak + 1 : 1;
-    return {...progress, [size]: {last: today, streak}};
+    return {...progress, [size]: {last: today, streak, ...(solution.length > 0 && {solution})}};
 }
+
+// A saved solution is only kept if every piece is a whole cell on this size's board.
+const validSolution = (solution, size) => Array.isArray(solution) && solution.length > 0 && solution.every(piece =>
+    piece && Number.isInteger(piece.x) && Number.isInteger(piece.y) &&
+    piece.x >= 0 && piece.x < size && piece.y >= 0 && piece.y < size && typeof piece.kind === "string");
 
 // The streak while it is alive (won today or yesterday), else 0.
 export function streakFor(progress, size, today) {
@@ -38,6 +45,9 @@ export function loadProgress(storage) {
             const entry = parsed?.[size];
             if (entry && DATE.test(entry.last) && Number.isInteger(entry.streak) && entry.streak > 0) {
                 progress[size] = {last: entry.last, streak: entry.streak};
+                if (validSolution(entry.solution, size)) {
+                    progress[size].solution = entry.solution.map(({x, y, kind}) => ({x, y, kind}));
+                }
             }
         }
         return progress;

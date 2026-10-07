@@ -122,3 +122,44 @@ test("two tabs: a win in one tab keeps the other tab's saved win", () => {
         5: {last: "2026-10-07", streak: 2},
     });
 });
+
+test("a win can save the pieces the player placed", () => {
+    const solution = [{x: 1, y: 2, kind: "burster"}, {x: 0, y: 0, kind: "pusher"}];
+    const progress = recordWin({}, 5, "2026-10-07", solution);
+    assert.deepEqual(progress[5], {last: "2026-10-07", streak: 1, solution});
+});
+
+test("winning the same day again keeps the first solution", () => {
+    const first = [{x: 1, y: 2, kind: "burster"}];
+    const once = recordWin({}, 5, "2026-10-07", first);
+    const again = recordWin(once, 5, "2026-10-07", [{x: 3, y: 3, kind: "octo"}]);
+    assert.deepEqual(again[5].solution, first);
+});
+
+test("the next day's win replaces the solution", () => {
+    let progress = recordWin({}, 5, "2026-10-07", [{x: 1, y: 2, kind: "burster"}]);
+    progress = recordWin(progress, 5, "2026-10-08", [{x: 0, y: 1, kind: "tee"}]);
+    assert.deepEqual(progress[5], {last: "2026-10-08", streak: 2, solution: [{x: 0, y: 1, kind: "tee"}]});
+});
+
+test("a saved solution survives saving and loading", () => {
+    const storage = fakeStorage();
+    const solution = [{x: 4, y: 0, kind: "leap"}];
+    saveProgress(storage, recordWin({}, 5, "2026-10-07", solution));
+    assert.deepEqual(loadProgress(storage)[5].solution, solution);
+});
+
+test("a damaged saved solution is dropped but the streak is kept", () => {
+    const bad = [
+        [{x: 5, y: 0, kind: "leap"}],                 // off a 5x5 board
+        [{x: 1, y: 1}],                                // no kind
+        [{x: 1.5, y: 1, kind: "leap"}],                // not a whole cell
+        "oops",
+        [null],
+    ];
+    for (const solution of bad) {
+        const saved = {"5": {last: "2026-10-07", streak: 3, solution}};
+        const loaded = loadProgress(fakeStorage({"qup-progress-v1": JSON.stringify(saved)}));
+        assert.deepEqual(loaded, {5: {last: "2026-10-07", streak: 3}}, JSON.stringify(solution));
+    }
+});

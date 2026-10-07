@@ -31,7 +31,7 @@ export const KINDS = {
 
 let nextId = 1;
 export const makePiece = (kind, charges = 1, locked = false, required = true) =>
-    new Node({id: nextId++, summary: KINDS[kind].summary, charges, abilities: [...KINDS[kind].abilities], locked, required});
+    new Node({id: nextId++, summary: KINDS[kind].summary, charges, abilities: [...KINDS[kind].abilities], locked, required, kind});
 
 // A definition may carry its own `size`; one without is 5x5.
 export const DEFAULT_SIZE = 5;

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {Node, makeEmptyNode} from "./node.js";
-import {canDrag, canDrop, dropAction, applyDrop, validatePuzzle} from "./rules.js";
+import {canDrag, canDrop, dropAction, applyDrop, validatePuzzle, placedPieces} from "./rules.js";
 
 const grid = (...cells) => {
     const g = Array.from({length: 3}, () => Array.from({length: 3}, () => makeEmptyNode()));
@@ -106,4 +106,13 @@ test("applyDrop: a board piece dropped off the grid goes to the hand; onto a loc
     applyDrop(g, pool, pickUp(g, 0, 0), {x: 2, y: 2});
     assert.equal(g[0][0], p);
     assert.equal(g[2][2], lockedPiece);
+});
+
+test("placedPieces lists the movable pieces on the board with their kinds", () => {
+    const fixed = new Node({id: 1, charges: 1, locked: true, kind: "igniter"});
+    const mine = new Node({id: 2, charges: 1, kind: "burster"});
+    const other = new Node({id: 3, charges: 1, kind: "octo"});
+    const g = grid([0, 0, fixed], [2, 1, mine], [1, 2, other]);
+    assert.deepEqual(placedPieces(g), [{x: 1, y: 2, kind: "octo"}, {x: 2, y: 1, kind: "burster"}]);
+    assert.deepEqual(placedPieces(grid([0, 0, fixed])), []);
 });

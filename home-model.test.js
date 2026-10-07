@@ -26,6 +26,7 @@ test("a card for a mode that has not been played", () => {
         done: false,
         streak: 0,
         tally: [],
+        solution: [],
         streakText: "no streak yet",
         playLabel: "Play",
         dailyHref: "play.html?size=5&mode=daily",
@@ -63,4 +64,16 @@ test("a broken streak reads as none", () => {
 test("one day reads as '1 day'", () => {
     const card = cardModel({size: 5, progress: {5: {last: "2026-10-07", streak: 1}}, today: "2026-10-07"});
     assert.equal(card.streakText, "1 day");
+});
+
+test("a finished card carries the player's own solution; an unfinished one carries none", () => {
+    const solution = [{x: 0, y: 1, kind: "burster"}];
+    const done = cardModel({size: 3, progress: {3: {last: "2026-10-07", streak: 2, solution}}, today: "2026-10-07"});
+    assert.deepEqual(done.solution, solution);
+    // yesterday's solution is not today's
+    const old = cardModel({size: 3, progress: {3: {last: "2026-10-06", streak: 2, solution}}, today: "2026-10-07"});
+    assert.deepEqual(old.solution, []);
+    // finished before solutions were saved
+    const bare = cardModel({size: 3, progress: {3: {last: "2026-10-07", streak: 2}}, today: "2026-10-07"});
+    assert.deepEqual(bare.solution, []);
 });

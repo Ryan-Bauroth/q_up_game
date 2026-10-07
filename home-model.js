@@ -30,6 +30,7 @@ export function cardModel({size, progress, today}) {
         done,
         streak,
         tally: tallyGroups(streak),
+        solution: done ? progress[size].solution ?? [] : [],   // the pieces the player placed today
         streakText,
         playLabel: done ? "Review" : "Play",
         dailyHref: playHref(size, "daily"),

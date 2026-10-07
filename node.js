@@ -1,6 +1,8 @@
 export class Node {
-    constructor({id = 0, summary = "", charges = 0, abilities = [], locked = false, required = true} = {}) {
+    constructor({id = 0, summary = "", charges = 0, abilities = [], locked = false, required = true, kind = null} = {}) {
         this.id = id;
+        // which kind of piece this is ("burster", "octo", ...), so a layout can be saved and rebuilt
+        this.kind = kind;
         // locked pieces start on the board and can't be moved or replaced
         this.locked = locked;
         // a piece that isn't required can be left unactivated without losing the
@@ -34,7 +36,7 @@ export class Node {
     }
 
     clone() {
-        return new Node({id: this.id, summary: this.summary, charges: this.maxCharges, abilities: [...this.abilities], locked: this.locked, required: this.required});
+        return new Node({id: this.id, summary: this.summary, charges: this.maxCharges, abilities: [...this.abilities], locked: this.locked, required: this.required, kind: this.kind});
     }
 }
 
