@@ -114,7 +114,7 @@ function buildCard(size, progress) {
     buttons.append(play, unlimited);
     article.appendChild(buttons);
 
-    article.appendChild(element("p", "sub", card.pieces ? `${card.label} · ${card.pieces} ${card.pieces === 1 ? "piece" : "pieces"}` : card.label));
+    article.appendChild(element("p", "sub", card.label));
     return article;
 }
 
