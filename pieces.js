@@ -41,7 +41,7 @@ export const PALETTE = {
     reactor: {fill: "#d65a43", edge: "#92372a"},
     starter: {fill: "#d4a017", edge: "#8a6508"},
     beam: {fill: "#7b5fc4", edge: "#4f3a8c"},
-    beamRow: {fill: "#4a7fc7", edge: "#2f5593"},   // row beams: a blue next to the column beams' violet
+    beamRow: {fill: "#7b5fc4", edge: "#4f3a8c"},   // row beams share the column beams' violet, and so does their wash
 };
 
 export function pieceType(node) {

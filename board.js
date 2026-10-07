@@ -187,7 +187,7 @@ export class Board {
     }
 
     // A soft wash over every cell a placed beam piece covers: violet for
-    // columns, blue for rows. Where a column and a row cross, the cell is split
+    // columns and rows alike. Where a column and a row cross, the cell is split
     // along its anti-diagonal: top-left triangle the column's color, bottom-right
     // triangle the row's, meeting in the middle.
     drawBeamTints() {

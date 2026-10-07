@@ -4,7 +4,7 @@ import {pieceType, skipDepth} from "./pieces.js";
 // The piece is titled by its color; a red piece that skips tiles (the one
 // with the corner marks) is "Red w/ outline".
 const COLOR_NAMES = {receiver: "Teal", starter: "Yellow", beam: "Purple"};
-const ROW_BEAM_NAME = "Blue";
+const ROW_BEAM_NAME = "Purple";
 
 // Pure: the short description shown when you hover a piece: its color as the
 // title, then quick facts (as bullet points), then a one-sentence description

@@ -69,7 +69,7 @@ test("whole-line pieces are their own type with their own color and a capsule bo
         assert.equal(pieceType(piece([id])), "beam");
         assert.equal(bodyKind(piece([id])), "capsule");
     }
-    // columns are violet, rows are a blue beside it
+    // columns and rows share the same violet
     assert.equal(colorForNode(piece(["columnPulse"])), PALETTE.beam);
     assert.equal(colorForNode(piece(["rowPulse"])), PALETTE.beamRow);
     assert.equal(colorForNode(piece(["rowSweep"])), PALETTE.beamRow);

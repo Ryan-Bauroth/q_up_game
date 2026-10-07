@@ -47,7 +47,7 @@ test("yesterday's win keeps the streak alive but the day is not done", () => {
     assert.equal(card.done, false);
     assert.equal(card.playLabel, "Play");
     assert.equal(card.streak, 2);
-    assert.equal(card.label, "the big one");
+    assert.equal(card.label, "the big kahuna");
 });
 
 test("a broken streak reads as none", () => {

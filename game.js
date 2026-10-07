@@ -130,8 +130,10 @@ function renderPool() {
         el.appendChild(pieceCanvas);
 
         el.addEventListener("pointerdown", e => startDragFromPool(e, index));
-        el.addEventListener("mouseenter", () => renderSummary(node));
-        el.addEventListener("mouseleave", () => renderSummary(null));
+        // Mouse hover only: on touch the emulated mouse events linger after a
+        // tap, so a tapped piece is selected (and deselected) by pointerdown instead.
+        el.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") renderSummary(node); });
+        el.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") renderSummary(null); });
         poolEl.appendChild(el);
     }
 }
@@ -212,6 +214,10 @@ canvas.addEventListener("pointerdown", e => {
     const mouseY = e.clientY - rect.top;
     const cell = checkMouseLocationForObject(mouseX, mouseY);
     if (cell != null && roundOver) retryFromFailure();
+    if (cell == null && e.pointerType !== "mouse") {   // a tap on empty board deselects
+        renderSummary(null);
+        setPreview(null);
+    }
 
     if (cell != null && canDrag(board.grid[cell.x][cell.y])) {
         e.preventDefault();
@@ -252,6 +258,7 @@ function finishDrag(e, cancelled) {
         poolIndex: board.dragPoolIndex,
     }, target);
 
+    const tappedPoolNode = e.pointerType !== "mouse" && board.dragSource === "pool" && !target ? board.draggedObject : null;
     ghost.hidden = true;
     board.dragging = false;
     board.dragSource = null;
@@ -262,10 +269,20 @@ function finishDrag(e, cancelled) {
 
     renderPool();
     const hovered = checkMouseLocationForObject(mouseX, mouseY);
-    renderSummary(hovered ? board.grid[hovered.x][hovered.y] : null);
+    renderSummary(hovered ? board.grid[hovered.x][hovered.y] : tappedPoolNode);
     setPreview(hovered);
     board.drawBoard();
 }
+
+// Touch has no hover, so a tap selects: the tapped piece shows its summary and
+// reach until the next tap lands on a different piece or on nothing. (Taps on a
+// board piece are settled by finishDrag, where the piece is put back.)
+document.addEventListener("pointerdown", e => {
+    if (e.pointerType === "mouse" || board.dragging) return;
+    if (e.target.closest(".pool-node") || e.target === canvas) return;
+    renderSummary(null);
+    setPreview(null);
+});
 
 document.addEventListener("pointermove", e => {
     const rect = canvas.getBoundingClientRect();

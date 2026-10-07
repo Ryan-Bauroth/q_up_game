@@ -39,7 +39,7 @@ test("the title is the piece's color; skip pieces are 'Red w/ outline'", () => {
     assert.equal(describePiece(make([])).title, "Teal");
     assert.equal(describePiece(make(["runPulseDown"])).title, "Yellow");
     assert.equal(describePiece(make(["columnPulse"])).title, "Purple");
-    assert.equal(describePiece(make(["rowPulse"])).title, "Blue");
+    assert.equal(describePiece(make(["rowPulse"])).title, "Purple");
     assert.equal(describePiece(make(["adjacentBurst"])).title, "Red");
     assert.equal(describePiece(make(["octoBurst"])).title, "Red");
     for (const id of ["lineSkip2Right", "skipDown2", "skipLeft2", "diagSkip2", "knightJump"]) {

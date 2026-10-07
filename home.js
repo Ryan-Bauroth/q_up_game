@@ -42,7 +42,7 @@ function flame() {
 // The streak tag: the streak as a Roman numeral engulfed in a flame (the plain
 // words, on a plain tag, if there is none yet).
 function streakTag(card) {
-    const tag = element("div", card.roman ? "up tag streak has-roman" : "up tag streak");
+    const tag = element("div", card.roman ? `up tag streak has-roman${card.streak >= 5 ? " big" : ""}` : "up tag streak");
     tag.setAttribute("role", "img");
     tag.setAttribute("aria-label", `streak: ${card.streakText}`);
     if (card.roman) tag.append(flame(), element("span", "num", card.roman));
@@ -75,6 +75,10 @@ function drawPreview(canvas, size, solution) {
         ctx.moveTo(0, i * cell);
         ctx.lineTo(css, i * cell);
         ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(246, 196, 83, 0.4)";   // yellow wash under the player's own pieces
+    for (const {x, y, kind} of solution) {
+        if (KINDS[kind]) ctx.fillRect(x * cell + 0.5, y * cell + 0.5, cell - 1, cell - 1);
     }
     for (let x = 0; x < size; x++) {
         for (let y = 0; y < size; y++) {
