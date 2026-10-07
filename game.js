@@ -7,7 +7,7 @@ import {drawPieceShape, targetCells} from "./pieces.js";
 import {buildFromDefinition} from "./puzzles.js";
 import {generateDefinition} from "./generator.js";
 import {initTutorial} from "./tutorial.js";
-import {canDrag, applyDrop, validatePuzzle} from "./rules.js";
+import {canDrag, applyDrop, validatePuzzle, placedPieces} from "./rules.js";
 import {parsePlayParams, playTitle, winMessage, CANVAS_SIZES} from "./play-model.js";
 import {easternDateString} from "./dates.js";
 import {dailyDefinition} from "./daily.js";
@@ -270,7 +270,7 @@ function winText() {
     progress = mergeProgress(progress, loadProgress(browserStorage()));
     const firstWin = !isDone(progress, gridScale, today);
     if (firstWin) {
-        progress = recordWin(progress, gridScale, today);
+        progress = recordWin(progress, gridScale, today, placedPieces(preRunGrid ?? board.grid));
         saveProgress(browserStorage(), progress);
     }
     return winMessage({daily: true, firstWin, streak: progress[gridScale].streak});

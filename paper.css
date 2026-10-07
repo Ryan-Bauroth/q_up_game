@@ -113,21 +113,6 @@ body.paper a {
     display: none;
 }
 
-/* a stamp: just an inked coral outline, no shadow */
-.up.stamp {
-    --face: transparent;
-    --edge: var(--coral);
-    color: var(--coral);
-}
-
-.up.stamp > .line::before {
-    display: none;
-}
-
-.up.stamp > .line::after {
-    border-width: 3px;
-}
-
 /* ---------- buttons and pills ---------- */
 
 .btn,
@@ -306,17 +291,6 @@ body.paper a:focus-visible {
     background: var(--ink);
     border-radius: 3px;
     transform: rotate(-24deg);
-}
-
-.card .stamp {
-    position: absolute;
-    z-index: 4;
-    right: 2px;
-    top: 74px;
-    padding: 3px 12px;
-    font: 400 28px/1 var(--font-head);
-    letter-spacing: 2px;
-    transform: rotate(-11deg);
 }
 
 .card .btns {

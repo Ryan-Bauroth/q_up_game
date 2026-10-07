@@ -157,9 +157,11 @@ try {
     console.log("home streak labels:", await evaluate(`JSON.stringify([...document.querySelectorAll(".card .tag.streak")].map(el => el.getAttribute("aria-label")))`));
     const playLabels = JSON.parse(await evaluate(`JSON.stringify([...document.querySelectorAll(".card .btns .btn:first-child")].map(el => el.textContent))`));
     console.log("home play labels:", JSON.stringify(playLabels));
-    const stamps = await evaluate(`document.querySelectorAll(".card .stamp").length`);
-    console.log("stamps:", stamps);
-    check(stamps === 1, `expected 1 stamp on the home page, found ${stamps}`);
+    const finished = JSON.parse(await evaluate(`JSON.stringify([...document.querySelectorAll('.card[data-done="true"]')].map(el => [el.dataset.size, el.dataset.placed]))`));
+    console.log("finished cards (size, pieces of your solution shown):", JSON.stringify(finished));
+    check(finished.length === 1 && finished[0][0] === String(size), `expected one finished ${size}x${size} card, found ${JSON.stringify(finished)}`);
+    check(finished.length === 1 && Number(finished[0][1]) === definition.solution.length, `the card should show your ${definition.solution.length} placed pieces, shows ${finished[0]?.[1]}`);
+    check(await evaluate(`document.querySelectorAll(".card .stamp").length`) === 0, "the DONE stamp should be gone");
     // cards are in size order 3, 5, 7
     const expectedLabels = [3, 5, 7].map(n => n === size ? "Review" : "Play");
     check(JSON.stringify(playLabels) === JSON.stringify(expectedLabels), `play labels were ${JSON.stringify(playLabels)}, expected ${JSON.stringify(expectedLabels)}`);
