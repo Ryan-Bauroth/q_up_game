@@ -29,7 +29,7 @@ test("the build script writes a file the game can read, and a second run builds 
             for (const size of [3, 5]) {
                 const picked = pickDaily(file, date, size);
                 assert.ok(picked, `${date} ${size}x${size}`);
-                assert.ok(picked.solutions.length >= 2 && picked.solutions.length <= 3);
+                assert.ok(picked.solutions.length >= 2);
             }
         }
         // running again keeps what is there

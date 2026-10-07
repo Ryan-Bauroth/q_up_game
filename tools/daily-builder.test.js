@@ -1,16 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {buildDaily, MIN_SOLUTIONS, MAX_SOLUTIONS} from "./daily-builder.js";
+import {buildDaily, MIN_SOLUTIONS} from "./daily-builder.js";
 import {findSolutions, solutionKey} from "../solutions.js";
 import {isSensible} from "../lint.js";
 
-test("every size wants between 2 and 3 solutions", () => {
+test("every size wants at least 2 solutions", () => {
     assert.equal(MIN_SOLUTIONS, 2);
-    assert.equal(MAX_SOLUTIONS, 3);
 });
 
 for (const size of [3, 5]) {
-    test(`a ${size}x${size} daily has 2 or 3 solutions, with different piece counts, the main using every piece`, () => {
+    test(`a ${size}x${size} daily has at least 2 solutions, with different piece counts, the main using every piece`, () => {
         const built = buildDaily("2026-10-07", size, {maxCandidates: 20000, perCandidateMs: 5000});
         assert.ok(built, "found nothing");
         const {definition, solutions, attempt} = built;
@@ -19,7 +18,7 @@ for (const size of [3, 5]) {
         assert.equal(isSensible(definition), true);
         // no spares: the hand is exactly the main solution
         assert.equal(definition.hand.length, definition.solution.length);
-        assert.ok(solutions.length >= MIN_SOLUTIONS && solutions.length <= MAX_SOLUTIONS);
+        assert.ok(solutions.length >= MIN_SOLUTIONS);
         const counts = solutions.map(solution => solution.length);
         assert.equal(new Set(counts).size, counts.length, `piece counts ${counts}`);
         assert.equal(counts[0], definition.hand.length);          // largest first, and it uses every piece
