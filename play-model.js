@@ -81,3 +81,29 @@ export function waysSummary(solutions, foundCounts) {
         items: counts.map(count => ({found: isFound(count), label: isFound(count) ? "✓" : piecesText(count)})),
     };
 }
+
+// ---- sharing a daily ----
+
+export const FIRST_DAILY = "2026-10-06";
+
+// The number of the day's puzzle: the first daily is #1.
+export function dayNumber(today) {
+    const utc = date => Date.UTC(...date.split("-").map((n, i) => (i === 1 ? Number(n) - 1 : Number(n))));
+    return Math.round((utc(today) - utc(FIRST_DAILY)) / 86400000) + 1;
+}
+
+// 4 -> 4️⃣, 12 -> 1️⃣2️⃣ (a digit, variation selector, keycap)
+export const numberEmoji = count => [...String(count)].map(digit => `${digit}\uFE0F\u20E3`).join("");
+
+const SOLVED = "\u2705";            // ✅
+const UNSOLVED = "\u26D4\uFE0F";   // ⛔️
+
+// What a player shares for one size: the puzzle's name and number, then one
+// emoji pair per way to solve it (largest first): the pieces it takes, and whether
+// they found it. `counts` is every known way's piece count; `found` the ones they found.
+// With no known list, only the ways they found are shown. A `url` goes on its own last line.
+export function shareText({size, today, counts, found, url = null}) {
+    const all = (counts && counts.length > 0 ? counts : found).slice().sort((a, b) => b - a);
+    const pairs = all.map(count => `${numberEmoji(count)}${found.includes(count) ? SOLVED : UNSOLVED}`);
+    return `qube ${size}x${size} #${dayNumber(today)}\n${pairs.join(" ")}${url ? `\n${url}` : ""}`;
+}

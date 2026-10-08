@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {parsePlayParams, playTitle, playHref, winMessage, solveStyle, waysSummary, CANVAS_SIZES, PLAY_SIZES, nextUnsolvedSize} from "./play-model.js";
+import {parsePlayParams, playTitle, playHref, winMessage, solveStyle, dayNumber, shareText, numberEmoji, waysSummary, CANVAS_SIZES, PLAY_SIZES, nextUnsolvedSize} from "./play-model.js";
 
 test("the play page reads its size and mode from the URL", () => {
     assert.deepEqual(parsePlayParams("?size=5&mode=daily"), {size: 5, mode: "daily"});
@@ -110,4 +110,30 @@ test("a solve gets a one-word style by how its piece count compares with the kno
         "Solved! Streak: 1 day\nThorough: 5 pieces.");
     assert.equal(winMessage({daily: true, firstWin: true, streak: 1, pieces: 4, style: "Solid", extra: 1}),
         "Solved! Streak: 1 day\nSolid: 4 pieces, 1 not needed.");
+});
+
+test("the daily's number counts from the first daily, Oct 6 2026, as #1", () => {
+    assert.equal(dayNumber("2026-10-06"), 1);
+    assert.equal(dayNumber("2026-10-07"), 2);
+    assert.equal(dayNumber("2026-11-06"), 32);   // across a month end
+    assert.equal(dayNumber("2027-10-06"), 366);
+});
+
+test("number emoji", () => {
+    assert.equal(numberEmoji(4), "4\uFE0F\u20E3");
+    assert.equal(numberEmoji(12), "1\uFE0F\u20E32\uFE0F\u20E3");
+});
+
+test("a share lists every way to solve the daily, largest first, ticked when found", () => {
+    assert.equal(shareText({size: 3, today: "2026-10-07", counts: [3, 4], found: [4]}), "qube 3x3 #2\n4\uFE0F\u20E3\u2705 3\uFE0F\u20E3\u26D4\uFE0F");
+    // two ways with the same piece count are two entries
+    assert.equal(shareText({size: 5, today: "2026-10-06", counts: [4, 4, 3], found: [3, 4]}),
+        "qube 5x5 #1\n4\uFE0F\u20E3\u2705 4\uFE0F\u20E3\u2705 3\uFE0F\u20E3\u2705");
+    // without a known list, just what was found
+    assert.equal(shareText({size: 7, today: "2026-10-07", counts: null, found: [6]}), "qube 7x7 #2\n6\uFE0F\u20E3\u2705");
+});
+
+test("a share can end with a link to the game", () => {
+    assert.equal(shareText({size: 3, today: "2026-10-07", counts: [3], found: [3], url: "https://example.com/qube/"}),
+        "qube 3x3 #2\n3\uFE0F\u20E3\u2705\nhttps://example.com/qube/");
 });

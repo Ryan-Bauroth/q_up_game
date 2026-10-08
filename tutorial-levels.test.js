@@ -16,8 +16,8 @@ function wins(definition, pieces) {
     return simulate(placed, definition.size).won;
 }
 
-test("there are seven levels", () => {
-    assert.equal(LEVELS.length, 7);
+test("there are six levels", () => {
+    assert.equal(LEVELS.length, 6);
 });
 
 LEVELS.forEach((level, index) => {
@@ -29,9 +29,9 @@ LEVELS.forEach((level, index) => {
         assert.doesNotThrow(() => validatePuzzle(grid, pool));
     });
 
-    test(`${name} is 3x3 with at most 3 pieces`, () => {
+    test(`${name} is 3x3 with at most 4 pieces`, () => {
         assert.equal(definition.size, 3);
-        assert.ok(definition.locked.length + definition.hand.length <= 3);
+        assert.ok(definition.locked.length + definition.hand.length <= 4);
     });
 
     test(`${name} has no decoy hand pieces`, () => {

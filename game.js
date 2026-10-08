@@ -8,7 +8,7 @@ import {buildFromDefinition} from "./puzzles.js";
 import {generateDefinition} from "./generator.js";
 import {initTutorial} from "./tutorial.js";
 import {canDrag, applyDrop, validatePuzzle, placedPieces} from "./rules.js";
-import {parsePlayParams, playTitle, playHref, winMessage, solveStyle, waysSummary, nextUnsolvedSize, CANVAS_SIZES} from "./play-model.js";
+import {parsePlayParams, playTitle, playHref, winMessage, solveStyle, shareText, waysSummary, nextUnsolvedSize, CANVAS_SIZES} from "./play-model.js";
 import {easternDateString} from "./dates.js";
 import {loadDailyFile, getDaily} from "./daily-data.js";
 import {minimalSubset} from "./solutions.js";
@@ -39,19 +39,25 @@ const clearButton = document.getElementById("clear-button");
 const handControls = document.getElementById("hand-controls");
 const viewControls = document.getElementById("view-controls");
 const summaryBox = document.getElementById("summary-box");
-const waysBoxEl = document.getElementById("ways-box");
+const waysBoxEl = document.getElementById("ways-wrap");   // the solutions box and the share button beside it
 const narrowScreen = window.matchMedia("(max-width: 860px)");
+const infoActions = document.createElement("div");
+infoActions.id = "info-actions";
 function placeMobileLayout() {
     const sidePanel = document.getElementById("side-panel");
     const controls = document.getElementById("controls");
     if (narrowScreen.matches) {
-        document.getElementById("info-row").append(summaryBox, document.getElementById("result-banner"), document.getElementById("run-button"));
+        // beside the result: Run, or after a win Next with Try again under it
+        infoActions.append(document.getElementById("run-button"), document.getElementById("retry-button"));
+        document.getElementById("info-row").append(summaryBox, document.getElementById("result-banner"), infoActions);
         document.getElementById("board-tools").append(viewControls, waysBoxEl, handControls);
     } else {
         sidePanel.prepend(summaryBox, document.getElementById("result-banner"));
+        document.getElementById("result-banner").after(waysBoxEl);   // the solutions sit between the description and Run/Next
+        controls.prepend(document.getElementById("retry-button"));
         controls.insertBefore(document.getElementById("run-button"), document.getElementById("solution-button"));
         document.getElementById("nav-controls").insertBefore(handControls, document.getElementById("forward-controls"));
-        sidePanel.append(viewControls, waysBoxEl);
+        sidePanel.append(viewControls);
     }
 }
 placeMobileLayout();
@@ -65,6 +71,7 @@ function setBoardWidthVar() {
     document.getElementById("canvas-container").style.setProperty("--board-w", `${canvas.width + frame}px`);
 }
 const resultBanner = document.getElementById("result-banner");
+const resultShare = document.getElementById("result-share");
 const resultText = document.getElementById("result-text");
 const runLabel = document.getElementById("run-label");
 const retryButton = document.getElementById("retry-button");
@@ -413,10 +420,28 @@ let progress = loadProgress(browserStorage());
 
 // The "ways to solve it" box (daily only, once there is something to say): how
 // many ways there are and which have been found.
-const waysBox = document.getElementById("ways-box");
+const waysBox = document.getElementById("ways-wrap");
 const waysEl = document.getElementById("ways");
+const shareButton = document.getElementById("share-button");
+
+// Two levels when the bubbles fit on one line under "Solutions:"; otherwise they run on from the label.
+function fitWays() {
+    delete waysEl.dataset.stack;
+    const bubbles = [...waysEl.querySelectorAll(".way")];
+    if (bubbles.length === 0) return;
+    const style = getComputedStyle(waysEl);
+    const room = waysEl.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const gap = parseFloat(style.columnGap) || 0;
+    const needed = bubbles.reduce((sum, bubble) => sum + bubble.offsetWidth, 0) + gap * (bubbles.length - 1);
+    if (needed <= room) waysEl.dataset.stack = "true";
+}
+window.addEventListener("resize", () => { if (!waysBox.hidden) fitWays(); });
 
 function showWays(ways) {
+    // on the web the box opens up space above Run/Next: they slide down into place
+    // instead of jumping (the box itself just fades in)
+    const sliders = !narrowScreen.matches && waysBox.hidden && ways ? [document.getElementById("controls"), viewControls] : [];
+    const tops = sliders.map(el => el.getBoundingClientRect().top);
     waysBox.hidden = !ways;
     if (!ways) return;
     const label = document.createElement("span");
@@ -425,17 +450,87 @@ function showWays(ways) {
     const bubbles = ways.items.map(item => {
         const bubble = document.createElement("span");
         bubble.className = "way" + (item.found ? " found" : "");
-        bubble.textContent = item.label;
+        const [, count, unit] = item.label.match(/^(\d+)( .*)$/) ?? [];
+        if (count) {
+            // narrow screens show just the number; the unit is for when there is room
+            const unitEl = document.createElement("span");
+            unitEl.className = "way-unit";
+            unitEl.textContent = unit.trim();
+            bubble.append(count, unitEl);
+            bubble.title = item.label;
+        } else {
+            bubble.textContent = item.label;
+        }
         return bubble;
     });
     waysEl.setAttribute("aria-label", `Solutions found: ${ways.found} of ${ways.total}`);
     waysEl.replaceChildren(label, ...bubbles);
+    fitWays();
+    sliders.forEach((el, i) => {
+        const shift = tops[i] - el.getBoundingClientRect().top;
+        if (shift) el.animate([{transform: `translateY(${shift}px)`}, {transform: "none"}], {duration: 170, easing: "cubic-bezier(0.3, 0, 0.2, 1)"});
+    });
 }
 
 // A daily already solved today shows its ways when the page opens.
 if (isDaily && knownSolutions && isDone(progress, gridScale, today)) {
     showWays(waysSummary(knownSolutions, foundCounts(progress, gridScale, today)));
 }
+
+// Share (the button after the solutions, so only a solved daily has it): the result as emoji,
+// one per way to solve it.
+// Touch devices get the phone's share sheet; elsewhere the text is copied.
+const toast = document.createElement("div");
+toast.id = "toast";
+toast.setAttribute("role", "status");
+document.body.appendChild(toast);
+let toastTimer = null;
+function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+async function copyText(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+        return true;
+    } catch {
+        // an older browser: copy through a selected text box
+        const box = document.createElement("textarea");
+        box.value = text;
+        box.setAttribute("readonly", "");
+        box.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+        document.body.appendChild(box);
+        box.select();
+        box.setSelectionRange(0, text.length);
+        const ok = document.execCommand("copy");
+        box.remove();
+        return ok;
+    }
+}
+
+async function shareDaily() {
+    const text = shareText({
+        size: gridScale,
+        today,
+        counts: knownSolutions?.map(solution => solution.length) ?? null,
+        found: foundCounts(progress, gridScale, today),
+        url: new URL(".", location.href).href,   // the game's home page, wherever it is hosted
+    });
+    if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+        try {
+            await navigator.share({text});
+            return;
+        } catch (error) {
+            if (error.name === "AbortError") return;   // they closed the sheet
+        }
+    }
+    showToast(await copyText(text) ? "Copied to share!" : "Couldn't copy");
+}
+shareButton.addEventListener("click", shareDaily);
+resultShare.addEventListener("click", shareDaily);
 
 // What a win says. The first win of a daily puzzle records the day and the
 // streak; every different way found (by how many pieces it needs) is kept, but
@@ -475,6 +570,7 @@ function showResult(won) {
     resultBanner.classList.remove("hidden", "win", "lose");
     resultBanner.classList.add(won ? "win" : "lose");
     resultText.textContent = won ? winText() : "Not solved.";
+    resultShare.hidden = !(won && isDaily);
 }
 
 // After a win the run button goes on: to the next daily not yet solved (or home
@@ -615,7 +711,12 @@ function placeDotsMenu() {
 }
 function setBurgerOpen(open) {
     burgerPop.dataset.open = String(open);
+    const wasOpen = bar.classList.contains("menu-open");
     bar.classList.toggle("menu-open", open);
+    if (wasOpen && !open) {   // the title wiggles back in as the menu closes
+        bar.classList.add("menu-closing");
+        setTimeout(() => bar.classList.remove("menu-closing"), 420);
+    }
     burgerButton.setAttribute("aria-expanded", String(open));
     if (!open) setDotsMenuOpen(false);
 }

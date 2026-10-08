@@ -20,7 +20,9 @@ body.play .bar {
     gap: 16px;
     max-width: 1060px;
     margin: 0 auto;
-    padding: 24px 28px 4px;
+    --bar-pad-t: 24px;
+    --bar-pad-r: 28px;
+    padding: var(--bar-pad-t) var(--bar-pad-r) 4px 28px;
 }
 
 body.play .bar .title {
@@ -71,6 +73,43 @@ body.play .bar .help-button[data-tip]:focus-visible::after {
 body.play .bar .dots-menu-wrap > button[data-tip]::after {
     top: calc(100% + 10px);
     bottom: auto;
+}
+
+/* the dots choices: a raised paper card with the same wobbling ink outline as the buttons */
+body.play .dots-menu {
+    position: absolute;   /* (.up would make it relative) */
+    --face: var(--white);
+    --sx: 3px;
+    --sy: 4px;
+    min-width: 150px;
+    padding: 8px 8px;
+    background: none;
+    border: 0;
+    box-shadow: none;
+}
+
+body.play .dots-menu button {
+    padding: 7px 10px 7px 30px;
+    font: 400 19px/1.1 var(--font-body), cursive;
+    color: var(--ink);
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+body.play .dots-menu button:hover,
+body.play .dots-menu button:focus-visible {
+    background: rgba(37, 34, 29, 0.08);
+    outline: none;
+}
+
+body.play .dots-menu button[aria-checked="true"] {
+    font-weight: normal;
+    color: var(--green);
+}
+
+body.play .dots-menu button[aria-checked="true"]::before {
+    left: 9px;
+    font-size: 19px;
 }
 
 /* ---------- layout ---------- */
@@ -239,6 +278,21 @@ body.play #result-banner {
     border-radius: 14px 20px 13px 22px / 20px 13px 22px 14px;
 }
 
+/* the share button sits at the end of the result text, on narrow screens only (on the web it is beside the solutions) */
+body.play #result-banner .share-button {
+    display: none;
+    --sx: 2px;
+    --sy: 3px;
+    aspect-ratio: auto;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    align-self: center;
+    margin-left: 10px;
+    border-radius: 50%;
+    color: var(--ink);
+}
+
 body.play #result-banner.win {
     background: none;
     color: var(--green);
@@ -313,6 +367,10 @@ body.play .speed-button:focus-visible {
         display: contents;
     }
 
+    body.play #result-banner .share-button {
+        display: inline-flex;
+    }
+
     /* every row is as wide as the board; the 4px on the right leaves room for the buttons' shadows */
     body.play #controls {
         width: min(100%, var(--board-w, 420px));
@@ -343,22 +401,44 @@ body.play .speed-button:focus-visible {
         margin: 0 0 6px 0;
     }
 
-    body.play #info-row #run-button {
+    /* the buttons beside the result: the play button, or after a win Next with Try again stacked under it */
+    body.play #info-actions {
         flex: none;
-        min-width: 64px;
+        width: 64px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
         margin: 0 0 6px 0;
+    }
+
+    body.play #info-actions:has(#retry-button:not([hidden])) {
+        width: 96px;
+    }
+
+    body.play #info-actions #run-button,
+    body.play #info-actions #retry-button {
+        flex: 1 1 0;
+        min-width: 0;
+        margin: 0;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 6px;
+        font-family: var(--font-body), cursive;
+        font-size: 17px;
+        padding: 4px 6px;
     }
 
-    body.play #info-row #run-button .play-icon {
+    body.play #info-actions #run-button .play-icon {
+        display: none;   /* the play icon is only for Run; Next and Try again are words */
+    }
+
+    body.play #info-actions #run-button[data-label="Run"] .play-icon {
         display: block;
     }
 
     /* "Run" shows as just the play icon; other labels (Next, Try Again...) show as words */
-    body.play #info-row #run-button[data-label="Run"] #run-label {
+    body.play #info-actions #run-button[data-label="Run"] #run-label {
         display: none;
     }
 
@@ -398,6 +478,10 @@ body.play .speed-button:focus-visible {
     body.play #board-tools #ways {
         padding: 0;
         gap: 6px;
+    }
+
+    body.play #board-tools .way-unit {
+        display: none;   /* room is tight: just the number */
     }
 
     body.play #board-tools .way {
@@ -453,26 +537,98 @@ body.play .speed-button:focus-visible {
     }
 }
 
+/* ---------- share ---------- */
+
+body.play #toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    z-index: 40;
+    padding: 10px 18px;
+    font: 400 18px/1 var(--font-body), cursive;
+    color: var(--paper);
+    background: var(--ink);
+    transform: translate(-50%, 20px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.25s ease;
+}
+
+body.play #toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
 /* ---------- ways to solve the daily ---------- */
+
+/* on the web the box just fades in; game.js slides Run/Next down to make room */
+@media (min-width: 861px) {
+    body.play #ways-wrap:not([hidden]) {
+        animation: ways-fade 0.15s ease-out;
+    }
+}
+
+@keyframes ways-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* the share button: as tall as the solutions box, and square */
+body.play .share-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    align-self: stretch;
+    aspect-ratio: 1;
+    min-width: 44px;
+    padding: 0;
+    margin: 0;
+    border-radius: 14px 18px 13px 19px / 18px 13px 19px 14px;
+}
+
+/* in the narrow layout the share button is in the result box instead */
+body.play #board-tools #ways-wrap {
+    margin: 0 6px;
+    min-width: 0;
+}
+
+body.play #board-tools .share-button {
+    display: none;
+}
+
 
 body.play #result-text {
     white-space: pre-line;   /* a win can say several things, one per line */
 }
 
-body.play #ways-box {
+/* the solutions box with the share button on its right, as tall as the box */
+body.play #ways-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
     margin: 0 6px 6px 0;
+}
+
+body.play #ways-wrap #ways-box {
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0;
 }
 
 body.play #ways {
     display: flex;
+    flex-wrap: wrap;   /* with the share button beside it the box is narrow: the bubbles wrap
+                          to a second line rather than squeezing */
     align-items: center;
-    gap: 8px;
+    gap: 6px 8px;
     padding: 10px 16px;
     font-size: 18px;
 }
 
 /* one small bubble per way: filled and ticked once found */
 body.play .way {
+    flex: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -488,6 +644,18 @@ body.play .way {
     opacity: 0.7;
 }
 
+/* when every bubble fits on one line, the label gets a line of its own above them; with
+   more than fit, the bubbles start beside the label and wrap below (set by game.js) */
+@media (min-width: 861px) {
+    body.play #ways[data-stack] .ways-label {
+        flex: 1 0 100%;
+    }
+}
+
+body.play .way-unit {
+    margin-left: 0.3em;
+}
+
 body.play .way.found {
     border-style: solid;
     border-color: var(--green);
@@ -500,7 +668,7 @@ body.play .way.found {
 }
 
 
-/* ---------- the tutorial card: seven little lessons ---------- */
+/* ---------- the tutorial card: six little lessons ---------- */
 
 body.play .tutorial-overlay {
     position: fixed;
@@ -510,6 +678,71 @@ body.play .tutorial-overlay {
     padding: 16px;
     overflow-y: auto;            /* a short viewport scrolls the card, shadow and all */
     background: rgba(37, 34, 29, 0.45);
+}
+
+/* completing the tutorial: the card swells like a balloon, then bursts into scraps */
+body.play .tutorial-overlay[data-closing] {
+    pointer-events: none;
+}
+
+body.play .tutorial-overlay[data-closing="inflate"] .tutorial-card {
+    animation: card-inflate 0.26s ease-in forwards;
+}
+
+body.play .tutorial-overlay[data-closing="burst"] {
+    animation: overlay-out 0.5s ease-out forwards;
+}
+
+body.play .tutorial-overlay[data-closing="burst"] .tutorial-card {
+    visibility: hidden;
+}
+
+@keyframes card-inflate {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.05); }
+    60%  { transform: scale(1.04) rotate(-0.7deg); }
+    80%  { transform: scale(1.09) rotate(0.7deg); }
+    100% { transform: scale(1.14); }
+}
+
+@keyframes overlay-out {
+    from { background: rgba(37, 34, 29, 0.45); }
+    to   { background: rgba(37, 34, 29, 0); }
+}
+
+/* the scraps of the card, and a ring that flashes out where it burst */
+body.play .tutorial-shard {
+    --dx: 0px;    /* where each scrap flies to and how far it spins: set per scrap by tutorial.js */
+    --dy: 0px;
+    --rot: 0deg;
+    position: fixed;
+    z-index: 25;
+    border: 2px solid var(--ink);
+    transform: translate(-50%, -50%);
+    animation: shard-fly 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+    pointer-events: none;
+}
+
+@keyframes shard-fly {
+    0%   { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+    65%  { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.5) rotate(var(--rot)); opacity: 0; }
+}
+
+body.play .tutorial-ring {
+    position: fixed;
+    z-index: 24;
+    border: 5px solid var(--paper);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0.9;
+    animation: ring-out 0.35s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes ring-out {
+    from { transform: translate(-50%, -50%) scale(0.5); opacity: 0.9; }
+    to   { transform: translate(-50%, -50%) scale(1.3); opacity: 0; }
 }
 
 body.play .tutorial-card {
@@ -553,12 +786,12 @@ body.play .tutorial-close {
 body.play #tutorial-hint {
     align-self: stretch;
     margin: 8px 0 12px;
-    min-height: 3.9em;           /* three lines, so the board does not jump as the text changes */
+    min-height: 3.75em;          /* three lines, so the board does not jump as the text changes */
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 19px;
-    line-height: 1.3;
+    font-size: 22px;
+    line-height: 1.25;
 }
 
 body.play #tutorial-hint[data-tone="miss"] {
@@ -569,7 +802,183 @@ body.play #tutorial-hint[data-tone="win"] {
     color: var(--green);
 }
 
+/* the hand piece to drag is lit up in yellow (the board shows the cell it goes to) */
+body.play #tutorial-hand .pool-node.hot {
+    --face: #fbe39a;
+    animation: hot-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes hot-pulse {
+    0%, 100% { transform: none; }
+    50% { transform: translateY(-3px); }
+}
+
+/* a little arrow and text pointing at the dot the skip piece puts on its target */
+body.play #tutorial-note {
+    position: absolute;
+    z-index: 2;
+    transform: translate(calc(-100% - 12px), -50%);
+    width: 176px;
+    padding: 6px 12px 7px 8px;
+    box-sizing: border-box;
+    font: 400 16px/1.15 var(--font-body), cursive;
+    color: var(--ink);
+    --face: #fbe39a;
+    --sx: 2px;
+    --sy: 3px;
+    animation: note-in 0.25s ease-out;
+}
+
+/* the arrow: a small triangle on the note's right edge, pointing at the dot */
+body.play #tutorial-note::after {
+    content: "";
+    position: absolute;
+    right: -12px;
+    top: 50%;
+    margin-top: -6px;
+    border: 6px solid transparent;
+    border-left: 8px solid var(--ink);
+}
+
+/* the pointer out on the page: "The dots menu!" with an arrow to the button, and a ring around it */
+body.play #tutorial-menu-pointer {
+    position: fixed;
+    z-index: 22;
+    padding: 6px 12px 7px;
+    transform: translateY(-50%);
+    font: 400 17px/1.1 var(--font-body), cursive;
+    color: var(--ink);
+    white-space: nowrap;
+    --face: #fbe39a;
+    --sx: 2px;
+    --sy: 3px;
+    pointer-events: none;
+    animation: dim-in 0.2s ease-out;
+}
+
+body.play #tutorial-menu-pointer::after {
+    content: "";
+    position: absolute;
+    right: -15px;
+    top: 50%;
+    margin-top: -6px;
+    border: 6px solid transparent;
+    border-left: 9px solid var(--ink);
+}
+
+body.play #tutorial-menu-ring {
+    position: fixed;
+    z-index: 21;
+    --face: transparent;
+    --edge: #d4a017;
+    border-radius: 14px;
+    pointer-events: none;
+    animation: dim-in 0.2s ease-out;
+}
+
+body.play #tutorial-menu-ring > .line::after {
+    border-style: dashed;
+}
+
+body.play #tutorial-menu-pointer.leaving,
+body.play #tutorial-menu-ring.leaving {
+    animation: dim-out 0.2s ease-in forwards;
+}
+
+/* the ? on the board's corner that brings the dot note back */
+body.play #tutorial-note-again {
+    position: absolute;
+    right: -8px;
+    bottom: -10px;
+    z-index: 2;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    padding: 0;
+    font: 400 19px/1 var(--font-body), cursive;
+    --face: #fbe39a;
+    --sx: 2px;
+    --sy: 3px;
+    border-radius: 50%;
+    animation: hot-in 0.2s ease-out;
+}
+
+/* the note's button, and the light dim behind the note (a click on it puts the note away) */
+body.play .tutorial-note-ok {
+    display: block;
+    margin: 6px auto 0;
+    padding: 2px 14px 3px;
+    font: 400 17px/1.2 var(--font-body), cursive;
+    --sx: 2px;
+    --sy: 3px;
+}
+
+body.play #tutorial-dim {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: rgba(37, 34, 29, 0.22);
+    animation: dim-in 0.2s ease-out;
+}
+
+body.play #tutorial-dim.leaving {
+    animation: dim-out 0.2s ease-in forwards;
+}
+
+body.play #tutorial-note.leaving {
+    animation: note-out 0.2s ease-in forwards;
+}
+
+@keyframes dim-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes dim-out {
+    to { opacity: 0; }
+}
+
+@keyframes note-out {
+    to { opacity: 0; margin-top: 8px; }
+}
+
+/* the yellow boxes over the cells a hand piece goes in: wobbling ink outline, like the card's */
+body.play #tutorial-hots {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+body.play .tutorial-hot {
+    position: absolute;
+    --face: rgba(246, 196, 83, 0.55);
+    --edge: #d4a017;
+    border-radius: 12px 16px 11px 17px / 16px 11px 17px 12px;
+    animation: hot-in 0.2s ease-out;
+}
+
+@keyframes hot-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+body.play .tutorial-pop {
+    position: absolute;
+    pointer-events: none;
+}
+
+body.play .tutorial-hot > .line::after {
+    border-style: dashed;
+}
+
+@keyframes note-in {
+    from { opacity: 0; margin-left: -8px; }
+    to   { opacity: 1; margin-left: 0; }
+}
+
 body.play .tutorial-screen {
+    position: relative;
     width: 100%;
     max-width: 256px;
     padding: 7px;
@@ -699,17 +1108,20 @@ body.play .tutorial-card .pill:disabled {
 
 @media (max-width: 420px) {
     body.play .bar {
-        padding: 16px 12px 4px 8px;
+        --bar-pad-t: 16px;
+        --bar-pad-r: 12px;
+        padding: var(--bar-pad-t) var(--bar-pad-r) 4px 8px;
         gap: 10px;
     }
 
 }
 
-/* the title gets a row of its own, centered, so it never wraps */
-@media (max-width: 520px) {
+/* narrow screens: home, title and the hamburger share one row */
+@media (max-width: 860px) {
     /* home, title and ? share one row; the dots choices drop down from the ? */
     body.play .bar {
         position: relative;
+        --burger-gap: 14px;   /* between the hamburger and the buttons, and between the buttons */
     }
 
     body.play .bar .title {
@@ -717,7 +1129,6 @@ body.play .tutorial-card .pill:disabled {
         font-size: 28px;
         white-space: nowrap;
         min-width: 0;
-        transition: opacity 0.25s ease, transform 0.35s ease;
     }
 
     /* the ? becomes a hamburger. It turns into an X while a ribbon unrolls to
@@ -743,7 +1154,11 @@ body.play .tutorial-card .pill:disabled {
         stroke-linecap: round;
         transform-box: fill-box;
         transform-origin: center;
-        transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+        transition: transform 0.26s cubic-bezier(0.6, -0.28, 0.735, 0.045), opacity 0.12s ease 0.14s;   /* back to a hamburger: the opening, reversed */
+    }
+
+    body.play .burger-button[aria-expanded="true"] svg path {
+        transition: transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.12s ease;   /* into an X: quick, with a little spring */
     }
 
     body.play .burger-button[aria-expanded="true"] .bb-top {
@@ -759,64 +1174,81 @@ body.play .tutorial-card .pill:disabled {
         transform: translateY(-5px) rotate(-45deg);
     }
 
-    /* the title steps aside while the ribbon is out */
+    /* the title is rubbed out as the menu opens (swipe by swipe, toward the left) and
+       written back the same way as it closes */
     body.play .bar.menu-open .title {
-        opacity: 0;
-        transform: translateX(-14px);
+        animation: title-erase 0.36s ease-in-out forwards;
     }
 
-    /* the space between Home and the hamburger */
+    body.play .bar.menu-closing .title {
+        animation: title-write 0.36s ease-in-out;
+    }
+
+    /* the two buttons sit in a row to the left of the hamburger, joined by little
+       pixel dashes: the same three squares in each gap */
     body.play .bar .burger-tray {
         display: flex;
         position: absolute;
-        inset: 16px 68px 4px 66px;
+        inset: 0;
+        padding: var(--bar-pad-t) calc(var(--bar-pad-r) + 46px) 4px 0;
+        justify-content: flex-end;
         align-items: center;
         pointer-events: none;
         z-index: 7;
     }
 
     body.play .burger-pop {
-        flex: 1;
         display: flex;
         align-items: center;
-        justify-content: space-evenly;
-        height: 46px;
-        box-sizing: border-box;
-        background: var(--paper);
-        border: 2.4px solid var(--ink);
-        border-radius: 16px 12px 17px 11px / 12px 17px 11px 16px;
-        box-shadow: 2px 3px 0 var(--ink);
-        transform-origin: right center;
-        transform: translateX(28px) scaleX(0.15);
-        opacity: 0;
         visibility: hidden;
-        transition: transform 0.45s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.2s ease, visibility 0s linear 0.45s;
+        transition: visibility 0s linear 0.5s;
     }
 
     body.play .burger-pop[data-open="true"] {
-        transform: none;
-        opacity: 1;
         visibility: visible;
         pointer-events: auto;
-        transition: transform 0.45s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.2s ease, visibility 0s;
+        transition: visibility 0s;
     }
 
-    /* the two buttons pop in one after the other as the ribbon lands */
+    /* a gap: three squares, 2px in from the button's shadow so both sides look even */
+    body.play .burger-link {
+        flex: none;
+        width: var(--burger-gap);
+        height: 4px;
+        margin-left: 2px;
+        background: repeating-linear-gradient(90deg, var(--ink) 0 3px, transparent 3px 5.5px);
+        transform-origin: right center;
+    }
+
+    /* Closing plays the opening backwards: the farthest button goes first, each one
+       pulling back toward the hamburger, and the dashes between them fold away in turn. */
     body.play .burger-pop > * {
         opacity: 0;
-        transform: scale(0.4) rotate(-12deg);
-        transition: transform 0.3s ease, opacity 0.15s ease;
+        transform: translateX(34px) scale(0.5) rotate(14deg);
+        transition: transform 0.3s cubic-bezier(0.6, -0.28, 0.735, 0.045) var(--out, 0s), opacity 0.12s ease calc(var(--out, 0s) + 0.18s);
+    }
+
+    body.play .burger-pop > .burger-link {
+        opacity: 0;
+        transform: scaleX(0);
+        transition: transform 0.12s ease-in var(--out, 0s), opacity 0.03s linear calc(var(--out, 0s) + 0.09s);
     }
 
     body.play .burger-pop[data-open="true"] > * {
         opacity: 1;
         transform: none;
-        transition: transform 0.45s cubic-bezier(0.34, 1.8, 0.64, 1) 0.18s, opacity 0.2s ease 0.18s;
+        transition: transform 0.3s cubic-bezier(0.34, 1.7, 0.64, 1) var(--in, 0.1s), opacity 0.12s ease var(--in, 0.1s);
     }
 
-    body.play .burger-pop[data-open="true"] > :nth-child(2) {
-        transition-delay: 0.28s;
+    body.play .burger-pop[data-open="true"] > .burger-link {
+        transition: transform 0.12s ease-out var(--in, 0.1s), opacity 0.03s linear var(--in, 0.1s);
     }
+
+    /* opening order (nearest the hamburger first) and closing order (the reverse) */
+    body.play .burger-pop > :nth-child(4) { --in: 0.08s; --out: 0.09s; }
+    body.play .burger-pop > :nth-child(3) { --in: 0.11s; --out: 0.06s; }
+    body.play .burger-pop > :nth-child(2) { --in: 0.14s; --out: 0.03s; }
+    body.play .burger-pop > :nth-child(1) { --in: 0.17s; --out: 0s; }
 
     body.play .burger-pop .dots-menu-wrap {
         margin: 0;
@@ -859,7 +1291,46 @@ body.play .tutorial-card .pill:disabled {
         top: calc(100% + 12px);
         right: auto;
         left: -8px;
-        min-width: 150px;
-        font-family: var(--font-body), cursive;
+        min-width: 0;
+    }
+}
+
+/* the title is rubbed out in swipes: the top half, then the bottom half, working left; and written back the same way */
+@keyframes title-erase {
+    0% { clip-path: polygon(0 -4px, 100% -4px, 100% 50%, 100% 50%, 100% calc(100% + 4px), 0 calc(100% + 4px)); }
+    12% { clip-path: polygon(0 -4px, 76% -4px, 76% 50%, 100% 50%, 100% calc(100% + 4px), 0 calc(100% + 4px)); }
+    24% { clip-path: polygon(0 -4px, 76% -4px, 76% 50%, 72% 50%, 72% calc(100% + 4px), 0 calc(100% + 4px)); }
+    36% { clip-path: polygon(0 -4px, 52% -4px, 52% 50%, 72% 50%, 72% calc(100% + 4px), 0 calc(100% + 4px)); }
+    48% { clip-path: polygon(0 -4px, 52% -4px, 52% 50%, 48% 50%, 48% calc(100% + 4px), 0 calc(100% + 4px)); }
+    60% { clip-path: polygon(0 -4px, 28% -4px, 28% 50%, 48% 50%, 48% calc(100% + 4px), 0 calc(100% + 4px)); }
+    72% { clip-path: polygon(0 -4px, 28% -4px, 28% 50%, 24% 50%, 24% calc(100% + 4px), 0 calc(100% + 4px)); }
+    84% { clip-path: polygon(0 -4px, 0% -4px, 0% 50%, 24% 50%, 24% calc(100% + 4px), 0 calc(100% + 4px)); }
+    100% { clip-path: polygon(0 -4px, 0% -4px, 0% 50%, 0% 50%, 0% calc(100% + 4px), 0 calc(100% + 4px)); }
+}
+
+@keyframes title-write {
+    0% { clip-path: polygon(0 -4px, 0% -4px, 0% 50%, 0% 50%, 0% calc(100% + 4px), 0 calc(100% + 4px)); }
+    12% { clip-path: polygon(0 -4px, 24% -4px, 24% 50%, 0% 50%, 0% calc(100% + 4px), 0 calc(100% + 4px)); }
+    24% { clip-path: polygon(0 -4px, 24% -4px, 24% 50%, 28% 50%, 28% calc(100% + 4px), 0 calc(100% + 4px)); }
+    36% { clip-path: polygon(0 -4px, 48% -4px, 48% 50%, 28% 50%, 28% calc(100% + 4px), 0 calc(100% + 4px)); }
+    48% { clip-path: polygon(0 -4px, 48% -4px, 48% 50%, 52% 50%, 52% calc(100% + 4px), 0 calc(100% + 4px)); }
+    60% { clip-path: polygon(0 -4px, 72% -4px, 72% 50%, 52% 50%, 52% calc(100% + 4px), 0 calc(100% + 4px)); }
+    72% { clip-path: polygon(0 -4px, 72% -4px, 72% 50%, 76% 50%, 76% calc(100% + 4px), 0 calc(100% + 4px)); }
+    84% { clip-path: polygon(0 -4px, 100% -4px, 100% 50%, 76% 50%, 76% calc(100% + 4px), 0 calc(100% + 4px)); }
+    100% { clip-path: polygon(0 -4px, 100% -4px, 100% 50%, 100% 50%, 100% calc(100% + 4px), 0 calc(100% + 4px)); }
+}
+
+/* on the web the title sits in the middle of the page, whatever is at either end of the bar */
+@media (min-width: 861px) {
+    body.play .bar .title {
+        position: absolute;
+        left: 50%;
+        top: var(--bar-pad-t);
+        height: 46px;
+        display: flex;
+        align-items: center;
+        transform: translateX(-50%);
+        width: max-content;
+        max-width: calc(100% - 340px);
     }
 }
