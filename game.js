@@ -153,6 +153,8 @@ function moveGhost(e) {
 function renderPool() {
     poolEl.innerHTML = "";
     const slots = activeDefinition.hand.length;
+    // a hand of more than four wraps into two even rows on narrow screens
+    poolEl.style.setProperty("--per-row", slots > 4 ? Math.ceil(slots / 2) : 99);
     const held = new Map(pool.map((node, index) => [slotOf.get(node.id), {node, index}]));
     for (let slot = 0; slot < slots; slot++) {
         const entry = held.get(slot);
@@ -586,15 +588,33 @@ function setDotsMenuOpen(open) {
 }
 
 dotsButton.addEventListener("click", () => setDotsMenuOpen(dotsMenu.hidden));
+// On narrow screens a hamburger pops out the ? and a settings button; settings
+// opens the dots choices.
+const helpButton = document.getElementById("help-button");
+const burgerButton = document.getElementById("burger-button");
+const burgerPop = document.getElementById("burger-pop");
+function setBurgerOpen(open) {
+    burgerPop.hidden = !open;
+    burgerButton.setAttribute("aria-expanded", String(open));
+    if (!open) setDotsMenuOpen(false);
+}
+burgerButton.addEventListener("click", () => setBurgerOpen(burgerPop.hidden));
+document.getElementById("burger-help").addEventListener("click", () => {
+    setBurgerOpen(false);
+    helpButton.click();
+});
+document.getElementById("burger-settings").addEventListener("click", () => setDotsMenuOpen(dotsMenu.hidden));
+narrowScreen.addEventListener("change", () => setBurgerOpen(false));
 dotsItems.forEach(item => item.addEventListener("click", () => {
     board.dotMode = item.dataset.mode;
     dotsItems.forEach(other => other.setAttribute("aria-checked", String(other === item)));
     board.drawBoard();
     setDotsMenuOpen(false);
-    dotsButton.focus();
+    if (narrowScreen.matches) setBurgerOpen(false); else dotsButton.focus();
 }));
 document.addEventListener("pointerdown", e => {
-    if (!dotsMenu.hidden && !e.target.closest(".dots-menu-wrap")) setDotsMenuOpen(false);
+    if (!dotsMenu.hidden && !e.target.closest(".dots-menu-wrap, #burger-pop")) setDotsMenuOpen(false);
+    if (!burgerPop.hidden && !e.target.closest("#burger-pop, #burger-button, .dots-menu-wrap")) setBurgerOpen(false);
 });
 document.addEventListener("keydown", e => {
     if (e.key === "Escape" && !dotsMenu.hidden) {

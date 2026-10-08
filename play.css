@@ -34,6 +34,11 @@ body.play .bar .home-link svg {
     display: block;
 }
 
+body.play .burger-button,
+body.play .burger-pop {
+    display: none;
+}
+
 body.play .bar .help-button {
     min-width: 46px;
     font-size: 24px;
@@ -427,6 +432,17 @@ body.play .speed-button:focus-visible {
 
     body.play #hand-row {
         margin-top: 6px;
+        width: min(100%, var(--board-w, 420px));
+        margin-inline: auto;
+        padding-right: 4px;
+        box-sizing: border-box;
+    }
+
+    /* a big hand (7x7) keeps full-size tiles and wraps to two rows */
+    body.play #pool {
+        flex-wrap: wrap;
+        gap: 8px;
+        max-width: calc(var(--per-row, 99) * 70px - 8px);
     }
 
     body.play #result-banner {
@@ -690,20 +706,64 @@ body.play .tutorial-card .pill:disabled {
 
 /* the title gets a row of its own, centered, so it never wraps */
 @media (max-width: 520px) {
+    /* home, title and ? share one row; the dots choices drop down from the ? */
     body.play .bar {
-        flex-wrap: wrap;
-        row-gap: 4px;
+        position: relative;
     }
 
     body.play .bar .title {
-        order: 3;
-        flex: 1 0 100%;
         text-align: center;
-        font-size: 30px;
+        font-size: 28px;
         white-space: nowrap;
+        min-width: 0;
     }
 
-    body.play .bar > a.home-link {
-        margin-right: auto;
+    body.play .bar .dots-menu-wrap {
+        position: static;
+        margin: 0;
+    }
+
+    body.play .bar #dots-menu-button {
+        display: none;
+    }
+
+    body.play .bar .dots-menu {
+        top: calc(100% + 50px);
+        right: 12px;
+        min-width: 150px;
+    }
+
+    /* the ? becomes a hamburger; ? and settings pop out below it */
+    body.play .bar .help-button {
+        display: none;
+    }
+
+    body.play .bar .burger-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 46px;
+        padding: 5px 12px 6px;
+    }
+
+    body.play .bar .burger-pop {
+        position: absolute;
+        right: 12px;
+        top: calc(100% - 2px);
+        z-index: 6;
+        display: flex;
+        gap: 10px;
+    }
+
+    body.play .bar .burger-pop[hidden] {
+        display: none !important;
+    }
+
+    body.play .bar .burger-pop .pill {
+        min-width: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
     }
 }
