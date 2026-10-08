@@ -91,7 +91,7 @@ test("winMessage without a piece count, and waysSummary of nothing", () => {
 
 test("nextUnsolvedSize goes on from this size, wraps round and gives null when all are done", () => {
     const today = "2026-10-07";
-    const done = size => ({last: today, streak: 1, solutions: {}});
+    const done = () => ({last: today, streak: 1, solutions: {}});
     assert.equal(nextUnsolvedSize({}, 3, today), 5);
     assert.equal(nextUnsolvedSize({5: done()}, 3, today), 7);
     assert.equal(nextUnsolvedSize({7: done()}, 5, today), 3);

@@ -20,7 +20,7 @@ body.paper {
     margin: 0;
     min-height: 100vh;
     color: var(--ink);
-    font-family: var(--font-body);
+    font-family: var(--font-body), cursive;
     font-size: 18px;
     background-color: var(--paper);
     background-image: radial-gradient(rgba(60, 45, 20, 0.07) 1px, transparent 1.2px), radial-gradient(rgba(60, 45, 20, 0.04) 1px, transparent 1.2px);
@@ -274,14 +274,10 @@ body.home .cards {
     transform: rotate(2.5deg);
 }
 
-.tag.streak.has-roman {
-    padding: 0 14px 2px;
-    font: 400 28px/1.15 var(--font-head);
-    letter-spacing: 1px;
-}
-
 /* a streak is one flame with the numeral inside it: no pill, just the flame */
 .tag.streak.has-roman {
+    font: 400 28px/1.15 var(--font-head);
+    letter-spacing: 1px;
     top: -44px;
     right: -6px;
     min-width: 54px;
@@ -351,8 +347,8 @@ body.home .cards {
 .tag.streak.blue .flame .outer { fill: #3f7fd6; }
 .tag.streak.blue .flame .middle { fill: #6fb1f2; }
 .tag.streak.blue .flame .core { fill: #d8eeff; }
-.flame .middle { animation-delay: -0.28s; }
-.flame .core { animation-delay: -0.56s; }
+.flame path.middle { animation-delay: -0.28s; }
+.flame path.core { animation-delay: -0.56s; }
 
 @keyframes flicker {
     0% { transform: scale(1, 1) skewX(0deg); }

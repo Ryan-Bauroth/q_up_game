@@ -5,6 +5,13 @@ body.play [hidden] {
     display: none !important;
 }
 
+/* set by game.js (the board's frame width; how many hand tiles go in a row);
+   these are the defaults for before it does */
+body.play {
+    --board-w: 420px;
+    --per-row: 99;
+}
+
 /* ---------- top bar ---------- */
 
 body.play .bar {
@@ -128,7 +135,7 @@ body.play #board-tools:empty {
 
 body.play #board-tools .speed-button,
 body.play #board-tools .nav-button {
-    font-family: var(--font-body);
+    font-family: var(--font-body), cursive;
     font-size: 17px;
     color: var(--ink);
     background: var(--white);
@@ -187,7 +194,7 @@ body.play #controls {
 }
 
 body.play #controls button {
-    font-family: var(--font-body);
+    font-family: var(--font-body), cursive;
     font-size: 20px;
     padding: 9px 8px 8px;
 }
@@ -247,7 +254,7 @@ body.play #result-banner.lose {
 body.play #nav-controls .nav-button,
 body.play #solution-button,
 body.play .speed-button {
-    font-family: var(--font-body);
+    font-family: var(--font-body), cursive;
     font-size: 17px;
     color: var(--ink);
     background: var(--white);
@@ -279,9 +286,6 @@ body.play .speed-button:focus-visible {
     body.play #game-container {
         flex-direction: column;
         align-items: center;
-    }
-
-    body.play #game-container {
         gap: 16px;
         padding: 16px 8px 40px;
     }
@@ -363,6 +367,7 @@ body.play .speed-button:focus-visible {
         margin-inline: auto;
         padding-right: 4px;
         box-sizing: border-box;
+        --tool-h: 36px;   /* the solutions are just bubbles, as tall as the buttons beside them */
     }
 
     body.play #board-tools #view-controls {
@@ -370,11 +375,7 @@ body.play .speed-button:focus-visible {
         justify-content: flex-start;
     }
 
-    /* the solutions, as just their bubbles (no box around them), as tall as the buttons beside them */
-    body.play #board-tools {
-        --tool-h: 36px;
-    }
-
+    /* the solutions, as just their bubbles (no box around them) */
     body.play #board-tools .speed-button,
     body.play #board-tools .nav-button {
         height: var(--tool-h);
@@ -716,6 +717,7 @@ body.play .tutorial-card .pill:disabled {
         font-size: 28px;
         white-space: nowrap;
         min-width: 0;
+        transition: opacity 0.25s ease, transform 0.35s ease;
     }
 
     /* the ? becomes a hamburger. It turns into an X while a ribbon unrolls to
@@ -758,10 +760,6 @@ body.play .tutorial-card .pill:disabled {
     }
 
     /* the title steps aside while the ribbon is out */
-    body.play .bar .title {
-        transition: opacity 0.25s ease, transform 0.35s ease;
-    }
-
     body.play .bar.menu-open .title {
         opacity: 0;
         transform: translateX(-14px);
@@ -835,7 +833,7 @@ body.play .tutorial-card .pill:disabled {
         box-sizing: border-box;
         align-items: center;
         justify-content: center;
-        font-family: var(--font-body);
+        font-family: var(--font-body), cursive;
         font-size: 22px;
         color: var(--ink);
         background: var(--white);
@@ -862,6 +860,6 @@ body.play .tutorial-card .pill:disabled {
         right: auto;
         left: -8px;
         min-width: 150px;
-        font-family: var(--font-body);
+        font-family: var(--font-body), cursive;
     }
 }
