@@ -8,7 +8,7 @@ import {buildFromDefinition} from "./puzzles.js";
 import {generateDefinition} from "./generator.js";
 import {initTutorial} from "./tutorial.js";
 import {canDrag, applyDrop, validatePuzzle, placedPieces} from "./rules.js";
-import {parsePlayParams, playTitle, playHref, winMessage, waysSummary, nextUnsolvedSize, CANVAS_SIZES} from "./play-model.js";
+import {parsePlayParams, playTitle, playHref, winMessage, solveStyle, waysSummary, nextUnsolvedSize, CANVAS_SIZES} from "./play-model.js";
 import {easternDateString} from "./dates.js";
 import {loadDailyFile, getDaily} from "./daily-data.js";
 import {minimalSubset} from "./solutions.js";
@@ -147,14 +147,14 @@ function showGhost(node, e) {
 }
 
 function moveGhost(e) {
-    ghost.style.transform = `translate(${e.clientX - ghost.offsetWidth / 2}px, ${e.clientY - ghost.offsetHeight / 2}px)`;
+    ghost.style.transform = `translate3d(${e.clientX - ghost.offsetWidth / 2}px, ${e.clientY - ghost.offsetHeight / 2}px, 0)`;
 }
 
 function renderPool() {
     poolEl.innerHTML = "";
     const slots = activeDefinition.hand.length;
-    // a hand of more than four wraps into two even rows on narrow screens
-    poolEl.style.setProperty("--per-row", slots > 4 ? Math.ceil(slots / 2) : 99);
+    // a hand of more than four wraps into rows of four on narrow screens
+    poolEl.style.setProperty("--per-row", slots > 4 ? 4 : 99);
     const held = new Map(pool.map((node, index) => [slotOf.get(node.id), {node, index}]));
     for (let slot = 0; slot < slots; slot++) {
         const entry = held.get(slot);
@@ -363,7 +363,18 @@ document.addEventListener("pointerdown", e => {
     setPreview(null);
 });
 
+// Keep the browser's own drag and text selection out of a piece drag, and end the
+// drag if the mouse button was let go outside the window (no pointerup arrives then),
+// so the piece never gets stuck to a cursor that has stopped holding it.
+document.addEventListener("dragstart", e => { if (board.dragging || e.target.closest?.("#pool, .screen")) e.preventDefault(); });
+document.addEventListener("selectstart", e => { if (board.dragging) e.preventDefault(); });
+window.addEventListener("blur", () => { pendingTouchDrag = null; if (board.dragging) finishDrag({clientX: 0, clientY: 0, pointerType: "mouse"}, true); });
+
 document.addEventListener("pointermove", e => {
+    if (board.dragging && e.pointerType === "mouse" && e.buttons === 0) {
+        finishDrag(e, true);
+        return;
+    }
     const {x: mouseX, y: mouseY} = canvasPoint(e);
 
     if (board.dragging) {
@@ -435,7 +446,8 @@ function winText() {
     progress = mergeProgress(progress, loadProgress(browserStorage()));
     const firstWin = !isDone(progress, gridScale, today);
     // the pieces this win needed: decoys the player put down do not count
-    const used = minimalSubset(activeDefinition, placedPieces(preRunGrid ?? board.grid)) ?? [];
+    const placed = placedPieces(preRunGrid ?? board.grid);
+    const used = minimalSubset(activeDefinition, placed) ?? [];
     const before = foundCounts(progress, gridScale, today);
     if (firstWin) progress = recordWin(progress, gridScale, today, used);
     progress = addSolution(progress, gridScale, today, used);
@@ -451,6 +463,8 @@ function winText() {
         firstWin,
         streak: progress[gridScale].streak,
         pieces: used.length || undefined,
+        style: solveStyle(used.length, knownSolutions),
+        extra: Math.max(0, placed.length - used.length),
         newWay: !before.includes(used.length),
         cheaperLeft: ways?.cheaperLeft ?? 0,
         allFound: ways?.allFound ?? false,
@@ -588,23 +602,30 @@ function setDotsMenuOpen(open) {
 }
 
 dotsButton.addEventListener("click", () => setDotsMenuOpen(dotsMenu.hidden));
-// On narrow screens a hamburger pops out the ? and a settings button; settings
-// opens the dots choices.
+// On narrow screens a hamburger turns into an X while a ribbon unrolls over the
+// title, holding the dots menu and the ?.
 const helpButton = document.getElementById("help-button");
 const burgerButton = document.getElementById("burger-button");
 const burgerPop = document.getElementById("burger-pop");
+const dotsWrap = document.querySelector(".dots-menu-wrap");
+const bar = document.querySelector("header.bar");
+function placeDotsMenu() {
+    if (narrowScreen.matches) burgerPop.prepend(dotsWrap);
+    else bar.insertBefore(dotsWrap, helpButton);
+}
 function setBurgerOpen(open) {
-    burgerPop.hidden = !open;
+    burgerPop.dataset.open = String(open);
+    bar.classList.toggle("menu-open", open);
     burgerButton.setAttribute("aria-expanded", String(open));
     if (!open) setDotsMenuOpen(false);
 }
-burgerButton.addEventListener("click", () => setBurgerOpen(burgerPop.hidden));
+placeDotsMenu();
+burgerButton.addEventListener("click", () => setBurgerOpen(burgerPop.dataset.open !== "true"));
 document.getElementById("burger-help").addEventListener("click", () => {
     setBurgerOpen(false);
     helpButton.click();
 });
-document.getElementById("burger-settings").addEventListener("click", () => setDotsMenuOpen(dotsMenu.hidden));
-narrowScreen.addEventListener("change", () => setBurgerOpen(false));
+narrowScreen.addEventListener("change", () => { setBurgerOpen(false); placeDotsMenu(); });
 dotsItems.forEach(item => item.addEventListener("click", () => {
     board.dotMode = item.dataset.mode;
     dotsItems.forEach(other => other.setAttribute("aria-checked", String(other === item)));
@@ -613,8 +634,8 @@ dotsItems.forEach(item => item.addEventListener("click", () => {
     if (narrowScreen.matches) setBurgerOpen(false); else dotsButton.focus();
 }));
 document.addEventListener("pointerdown", e => {
-    if (!dotsMenu.hidden && !e.target.closest(".dots-menu-wrap, #burger-pop")) setDotsMenuOpen(false);
-    if (!burgerPop.hidden && !e.target.closest("#burger-pop, #burger-button, .dots-menu-wrap")) setBurgerOpen(false);
+    if (!dotsMenu.hidden && !e.target.closest(".dots-menu-wrap")) setDotsMenuOpen(false);
+    if (burgerPop.dataset.open === "true" && !e.target.closest("#burger-pop, #burger-button")) setBurgerOpen(false);
 });
 document.addEventListener("keydown", e => {
     if (e.key === "Escape" && !dotsMenu.hidden) {

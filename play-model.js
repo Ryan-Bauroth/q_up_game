@@ -42,12 +42,25 @@ const piecesText = count => `${count} ${count === 1 ? "piece" : "pieces"}`;
 // What the banner says after a win, one line per "\n". A daily win also says how
 // many pieces the player needed and, if the puzzle has cheaper ways, nudges
 // toward them without saying how many pieces they use.
-export function winMessage({daily, firstWin, streak, pieces, newWay = false, cheaperLeft = 0, allFound = false}) {
+// One word for how a solve compares with the puzzle's known ways, by the pieces it
+// needed: the fewest is "Simplest", the most is "Thorough", anything between "Solid".
+export function solveStyle(pieces, solutions) {
+    if (!pieces || !solutions || solutions.length === 0) return null;
+    const counts = solutions.map(solution => solution.length);
+    if (pieces <= Math.min(...counts)) return "Simplest";
+    if (pieces >= Math.max(...counts)) return "Thorough";
+    return "Solid";
+}
+
+export function winMessage({daily, firstWin, streak, pieces, newWay = false, cheaperLeft = 0, allFound = false, style = null, extra = 0}) {
     if (!daily) return "Solved!";
     const lines = [];
     if (firstWin) lines.push(`Solved! Streak: ${streak} ${streak === 1 ? "day" : "days"}`);
     else lines.push(newWay ? "A new solution!" : "Solved again!");
-    if (pieces) lines.push(`Used ${piecesText(pieces)}.`);
+    if (pieces) {
+        const spare = extra > 0 ? `, ${extra} not needed` : "";
+        lines.push(`${style ? `${style}: ` : ""}${piecesText(pieces)}${spare}.`);
+    }
     if (allFound) lines.push("You found every solution!");
     else if (cheaperLeft > 0) lines.push(`${cheaperLeft === 1 ? "A cheaper solution exists" : "Cheaper solutions exist"}: try for fewer pieces.`);
     return lines.join("\n");

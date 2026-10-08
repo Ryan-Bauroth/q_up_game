@@ -145,7 +145,8 @@ body {
     top: 0;
     pointer-events: none;
     z-index: 10;
-    filter: drop-shadow(0 9px 8px rgba(0, 0, 0, 0.3)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.3));
+    will-change: transform;   /* its own layer: the piece keeps up with the mouse on a zoomed page */
 }
 
 /* The clear board icon sits between Back and Next. */

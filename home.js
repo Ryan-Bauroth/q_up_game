@@ -44,7 +44,7 @@ function flame() {
 // The streak tag: the streak as a Roman numeral engulfed in a flame (the plain
 // words, on a plain tag, if there is none yet).
 function streakTag(card) {
-    const tag = element("div", card.roman ? `up tag streak has-roman${card.streak >= 5 ? " big" : ""}` : "up tag streak");
+    const tag = element("div", card.roman ? `up tag streak has-roman${card.streak >= 5 ? " big" : ""}${card.streak >= 30 ? " blue" : ""}` : "up tag streak");
     tag.setAttribute("role", "img");
     tag.setAttribute("aria-label", `streak: ${card.streakText}`);
     if (card.roman) tag.append(flame(), element("span", "num", card.roman));

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {buildFromDefinition, makePiece} from "./puzzles.js";
 import {validatePuzzle} from "./rules.js";
+import {simulate} from "./engine.js";
 
 const small = {
     name: "Test",
@@ -20,15 +21,22 @@ test("locked pieces start on the board and the hand starts in the tray", () => {
     assert.doesNotThrow(() => validatePuzzle(grid, pool));
 });
 
-test("hand pieces show 1 but are not required to be activated; locked pieces and targets are", () => {
+test("every piece on the board, hand pieces included, must be activated once placed", () => {
     const {grid, pool} = buildFromDefinition(small);
-    assert.ok(pool.every(piece => piece.required === false));
+    assert.ok(pool.every(piece => piece.required === true));
     assert.ok(pool.every(piece => piece.charges === 1));   // the number shown on a hand piece is always 1
     for (const column of grid) {
         for (const node of column) {
             if (!node.isEmpty) assert.equal(node.required, true);
         }
     }
+});
+
+test("a hand piece placed where nothing activates it keeps the puzzle from being won", () => {
+    const {grid, pool} = buildFromDefinition(small);
+    grid[0][1] = pool[0];                         // the burster the solution uses
+    grid[2][2] = pool[1];                         // a decoy nothing reaches
+    assert.equal(simulate(grid, 3).won, false);
 });
 
 test("a definition's size sets the grid size (5 when it has none)", () => {

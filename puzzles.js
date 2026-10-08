@@ -47,7 +47,7 @@ export function buildFromDefinition(def) {
     for (const [x, y, kind, charges = 1] of def.locked) {
         grid[x][y] = makePiece(kind, charges, true);
     }
-    // hand pieces need no activations: they are tools, not targets
-    const pool = def.hand.map(kind => makePiece(kind, 1, false, false));
+    // a hand piece is a tool until it is placed; once on the board it must be activated like any other piece
+    const pool = def.hand.map(kind => makePiece(kind, 1, false, true));
     return {name: def.name, grid, pool};
 }
